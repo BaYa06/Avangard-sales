@@ -89,7 +89,7 @@
     const [from,to]=calcRange(lbSel.value,lbFrom,lbTo);
     const rows=await aggregates(from,to);
     const box=$("#leaderboard-list"); box.innerHTML="";
-    rows.forEach((r,idx)=>{ const avg=r.sales?(r.people/r.sales):0; const xp=r.people+2*r.sales; const level=Math.floor(xp/20)+1; const rem=xp-(Math.floor(xp/50)*50); const pct=Math.min(100,Math.floor(rem/50*100)); const badge=(r.people>=200)?"🏆":(r.people>=100?"🥈":(r.people>=50?"🥉":""));
+    rows.forEach((r,idx)=>{ const avg=r.sales?(r.people/r.sales):0; const xp=r.people+2*r.sales; const level=Math.floor(xp/10)+1; const rem=xp-(Math.floor(xp/50)*50); const pct=Math.min(100,Math.floor(rem/50*100)); const badge=(r.people>=200)?"🏆":(r.people>=100?"🥈":(r.people>=50?"🥉":""));
       const card=document.createElement("div"); card.className="lb-card"; card.innerHTML=`<div><div class="lb-title">${idx+1}. ${escapeHtml(r.managerName)} ${badge}</div><div class="badges"><span class="badge">Люди: <b>${r.people}</b></span><span class="badge">Продаж: <b>${r.sales}</b></span><span class="badge">Средняя группа: <b>${avg.toFixed(1)}</b></span><span class="badge">Цель/нед: <b>${r.target||0}</b></span><span class="badge">XP: <b>${xp}</b> | LVL ${level}</span></div><div class="progress"><div style="width:${pct}%"></div></div></div><div style="font-weight:800;font-size:20px;">${medal(idx)}</div>`; box.appendChild(card);
     });
   }

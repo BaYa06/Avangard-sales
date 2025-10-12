@@ -1,6 +1,14 @@
-// /api/events -> GET(range), POST(create), DELETE(id)
+// /api/events -> GET, POST, DELETE
 import { db, ensureSchema } from '../db.js';
 import { randomUUID } from 'node:crypto';
+
+function parseBody(req) {
+  if (!req.body) return {};
+  if (typeof req.body === 'string') {
+    try { return JSON.parse(req.body); } catch { return {}; }
+  }
+  return req.body || {};
+}
 
 export default async function handler(req, res) {
   try {
@@ -13,7 +21,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const b = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+      const b = parseBody(req);
       await db.events.insert({
         id: b.id || randomUUID(),
         date: b.date,
@@ -28,10 +36,11 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'DELETE') {
-      const { id } = req.query;
+      const b = parseBody(req);
+      const id = req.query?.id || b.id;
       if (!id) return res.status(400).json({ error: 'id required' });
       await db.events.delete(id);
-      return res.status(200).json({ ok: true });
+      return res.status(200).json({ ok: true, id });
     }
 
     res.setHeader('Allow', 'GET, POST, DELETE');
