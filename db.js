@@ -33,16 +33,24 @@ export const db = {
     delete: (id) => sql`DELETE FROM managers WHERE id = ${id}`
   },
   events: {
-    listInRange: ({ from, to, managerId }) => sql`
-      SELECT * FROM events
-      WHERE date >= ${from} AND date <= ${to}
-      ${managerId ? sql`AND manager_id = ${managerId}` : sql``}
-      ORDER BY date DESC, created_at DESC
-    `,
+    listInRange: ({ from, to, managerId }) => {
+        if (managerId && String(managerId).trim() !== '') {
+        return sql`
+            SELECT * FROM events
+            WHERE date >= ${from} AND date <= ${to} AND manager_id = ${managerId}
+            ORDER BY date DESC, created_at DESC
+        `;
+        }
+        return sql`
+        SELECT * FROM events
+        WHERE date >= ${from} AND date <= ${to}
+        ORDER BY date DESC, created_at DESC
+        `;
+    },
     insert: (e) => sql`
-      INSERT INTO events (id,date,manager_id,sales_count,people,tour,amount,comment)
-      VALUES (${e.id}, ${e.date}, ${e.manager_id}, ${e.sales_count}, ${e.people}, ${e.tour}, ${e.amount}, ${e.comment})
+        INSERT INTO events (id,date,manager_id,sales_count,people,tour,amount,comment)
+        VALUES (${e.id}, ${e.date}, ${e.manager_id}, ${e.sales_count}, ${e.people}, ${e.tour}, ${e.amount}, ${e.comment})
     `,
     delete: (id) => sql`DELETE FROM events WHERE id = ${id}`
-  }
+    }
 };
