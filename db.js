@@ -34,18 +34,14 @@ export const db = {
   },
   events: {
     listInRange: ({ from, to, managerId }) => {
-        if (managerId && String(managerId).trim() !== '') {
-        return sql`
-            SELECT * FROM events
-            WHERE date >= ${from} AND date <= ${to} AND manager_id = ${managerId}
-            ORDER BY date DESC, created_at DESC
-        `;
-        }
-        return sql`
-        SELECT * FROM events
-        WHERE date >= ${from} AND date <= ${to}
-        ORDER BY date DESC, created_at DESC
-        `;
+        const has = managerId && String(managerId).trim() !== '';
+        return has
+        ? sql`SELECT * FROM events
+                WHERE date >= ${from} AND date <= ${to} AND manager_id = ${managerId}
+                ORDER BY date DESC, created_at DESC`
+        : sql`SELECT * FROM events
+                WHERE date >= ${from} AND date <= ${to}
+                ORDER BY date DESC, created_at DESC`;
     },
     insert: (e) => sql`
         INSERT INTO events (id,date,manager_id,sales_count,people,tour,amount,comment)

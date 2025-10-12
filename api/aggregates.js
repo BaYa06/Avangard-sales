@@ -7,22 +7,38 @@ export default async function handler(req, res) {
     await ensureSchema();
 
     const { from = '2000-01-01', to = '2100-01-01', managerId } = req.query;
+    const hasManager = managerId && String(managerId).trim() !== '';
 
-    // Вытащим события + имена менеджеров
-    const { rows: events } = await sql`
-      SELECT e.id, e.date, e.manager_id, e.sales_count, e.people, e.tour, e.amount, e.comment,
-             m.name AS manager_name, m.target AS manager_target
-      FROM events e
-      LEFT JOIN managers m ON m.id = e.manager_id
-      WHERE e.date >= ${from} AND e.date <= ${to}
-      ${managerId ? sql`AND e.manager_id = ${managerId}` : sql``}
-      ORDER BY e.date DESC, e.created_at DESC
-    `;
+    // ВАЖНО: никаких вложенных `sql` — только if/else.
+    const queryWithJoin = hasManager
+      ? sql`
+        SELECT e.id, e.date, e.manager_id, e.sales_count, e.people, e.tour, e.amount, e.comment,
+               m.name  AS manager_name,
+               m.target AS manager_target,
+               e.created_at
+        FROM events e
+        LEFT JOIN managers m ON m.id = e.manager_id
+        WHERE e.date >= ${from} AND e.date <= ${to}
+          AND e.manager_id = ${managerId}
+        ORDER BY e.date DESC, e.created_at DESC
+      `
+      : sql`
+        SELECT e.id, e.date, e.manager_id, e.sales_count, e.people, e.tour, e.amount, e.comment,
+               m.name  AS manager_name,
+               m.target AS manager_target,
+               e.created_at
+        FROM events e
+        LEFT JOIN managers m ON m.id = e.manager_id
+        WHERE e.date >= ${from} AND e.date <= ${to}
+        ORDER BY e.date DESC, e.created_at DESC
+      `;
 
-    // Totals по диапазону
+    const { rows: events } = await queryWithJoin;
+
+    // Totals
     let totalSales = 0, totalPeople = 0, totalAmount = 0;
     for (const e of events) {
-      totalSales += Number(e.sales_count || 0);
+      totalSales  += Number(e.sales_count || 0);
       totalPeople += Number(e.people || 0);
       totalAmount += Number(e.amount || 0);
     }
@@ -42,10 +58,11 @@ export default async function handler(req, res) {
         });
       }
       const row = map.get(key);
-      row.sales += Number(e.sales_count || 0);
+      row.sales  += Number(e.sales_count || 0);
       row.people += Number(e.people || 0);
       row.amount += Number(e.amount || 0);
     }
+
     const byManager = Array.from(map.values())
       .sort((a, b) => b.people - a.people || b.sales - a.sales);
 
