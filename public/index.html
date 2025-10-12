@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>Sales Board — Server (No native)</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0b132b">
+  <link rel="icon" href="assets/icon.png">
+  <link rel="apple-touch-icon" href="assets/icon.png">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-logo">🏔️</div>
+      <div class="brand-title">Продажи </div>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button class="tab active" data-tab="dashboard">Дашборд</button>
+      <button class="tab" data-tab="add">Добавить</button>
+      <button class="tab" data-tab="events">События</button>
+      <button class="tab" data-tab="leaderboard">Лидерборд</button>
+      <button class="tab" data-tab="settings">Настройки</button>
+    </nav>
+  </header>
+
+  <main class="container">
+    <!-- DASHBOARD -->
+    <section class="screen shown" id="screen-dashboard">
+      <div class="kpi-grid">
+        <div class="card kpi">
+          <div class="kpi-label">Сегодня — продажи</div>
+          <div class="kpi-value" id="kpi-today-sales">0</div>
+        </div>
+        <div class="card kpi">
+          <div class="kpi-label">Сегодня — люди</div>
+          <div class="kpi-value" id="kpi-today-people">0</div>
+        </div>
+        <div class="card kpi">
+          <div class="kpi-label">Неделя — люди</div>
+          <div class="kpi-value" id="kpi-week-people">0</div>
+        </div>
+        <div class="card kpi">
+          <div class="kpi-label">Месяц — люди</div>
+          <div class="kpi-value" id="kpi-month-people">0</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Сегодня: по менеджерам</div>
+        <div class="table-wrapper">
+          <table class="table" id="today-managers-table">
+            <thead>
+              <tr>
+                <th class="name_man">Имя</th>
+                <th class="count_all">Продаж</th>
+                <th class="count_people">Люди</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Лидер дня</div>
+        <div id="leader-today" class="leader-box">—</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Лидер недели</div>
+        <div id="leader-week" class="leader-box">—</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Лидер месяца</div>
+        <div id="leader-month" class="leader-box">—</div>
+      </div>
+    </section>
+
+    <!-- ADD -->
+    <section class="screen" id="screen-add">
+      <div class="card">
+        <div class="card-title">Добавить продажу</div>
+        <form id="add-form" class="form">
+          <div class="row">
+            <label>Дата</label>
+            <input type="date" id="add-date" required>
+          </div>
+          <div class="row">
+            <label>Менеджер</label>
+            <select id="add-manager" required></select>
+          </div>
+          <div class="row two">
+            <div>
+              <label>Продаж (штук)</label>
+              <input type="number" id="add-sales" min="1" value="1" required>
+            </div>
+            <div>
+              <label>Людей</label>
+              <input type="number" id="add-people" min="1" value="1" required>
+            </div>
+          </div>
+          <div class="row two">
+            <div>
+              <label>Тур/Продукт</label>
+              <input type="text" id="add-tour" placeholder="необязательно">
+            </div>
+            <div>
+              <label>Сумма</label>
+              <input type="number" id="add-amount" min="0" step="0.01" placeholder="необязательно">
+            </div>
+          </div>
+          <div class="row">
+            <label>Комментарий</label>
+            <input type="text" id="add-comment" placeholder="заметка (необязательно)">
+          </div>
+          <div class="row">
+            <button class="btn primary" type="submit">Сохранить</button>
+            <button class="btn" type="button" id="add-reset">Очистить</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- EVENTS -->
+    <section class="screen" id="screen-events">
+      <div class="card">
+        <div class="card-title">Фильтр</div>
+        <div class="filters">
+          <select id="period">
+            <option value="today">Сегодня</option>
+            <option value="week">Эта неделя</option>
+            <option value="month">Этот месяц</option>
+            <option value="custom">Диапазон дат</option>
+            <option value="all">Все</option>
+          </select>
+          <input type="date" id="from-date" class="hidden">
+          <span>—</span>
+          <input type="date" id="to-date" class="hidden">
+          <select id="filter-manager">
+            <option value="">Все менеджеры</option>
+          </select>
+          <button class="btn" id="btn-export">Экспорт JSON</button>
+        </div>
+        <div class="table-wrapper">
+          <table class="table" id="events-table">
+            <thead>
+              <tr>
+                <th>Дата</th>
+                <th>Менеджер</th>
+                <th>Продаж</th>
+                <th>Люди</th>
+                <th>Тур</th>
+                <th>Сумма</th>
+                <th>Комментарий</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="totals" id="events-totals">Итого: 0 продаж, 0 людей</div>
+      </div>
+    </section>
+
+    <!-- LEADERBOARD -->
+    <section class="screen" id="screen-leaderboard">
+      <div class="card">
+        <div class="card-title">Лидерборд</div>
+        <div class="filters">
+          <select id="lb-period">
+            <option value="today">Сегодня</option>
+            <option value="week">Эта неделя</option>
+            <option value="month">Этот месяц</option>
+            <option value="custom">Диапазон дат</option>
+            <option value="all">Все</option>
+          </select>
+          <input type="date" id="lb-from" class="hidden">
+          <span>—</span>
+          <input type="date" id="lb-to" class="hidden">
+        </div>
+        <div id="leaderboard-list" class="leaderboard"></div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="screen" id="screen-settings">
+      <div class="card">
+        <div class="card-title">Менеджеры</div>
+        <form id="mgr-form" class="form">
+          <div class="row two">
+            <div>
+              <label>Имя</label>
+              <input type="text" id="mgr-name" placeholder="Напр. Байырбек">
+            </div>
+            <div>
+              <label>Цель/неделя (людей)</label>
+              <input type="number" id="mgr-target" min="0" value="50">
+            </div>
+          </div>
+          <div class="row">
+            <button class="btn" id="mgr-add" type="button">Добавить менеджера</button>
+          </div>
+        </form>
+
+        <div class="table-wrapper">
+          <table class="table" id="mgr-table">
+            <thead>
+              <tr>
+                <th>Имя</th>
+                <th>Цель/неделя</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card warn">
+        <div class="card-title">Данные</div>
+        <div class="row">
+          <button class="btn" id="btn-backup">Скачать бэкап</button>
+          <label class="btn file">
+            Восстановить
+            <input type="file" id="file-restore" accept="application/json">
+          </label>
+          <button class="btn danger" id="btn-reset">Сбросить базу (удалить события)</button>
+        </div>
+        <p class="muted">Данные хранятся в файле SQLite: <code>data/sales.sqlite</code>.</p>
+      </div>
+    </section>
+  </main>
+
+  <button class="fab" id="fab-add" title="Добавить продажу">＋</button>
+
+  <footer class="app-footer">
+    <div>© Sales Board — server (sql.js, без нативной сборки)</div>
+  </footer>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
