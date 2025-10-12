@@ -70,6 +70,10 @@ input:focus, select:focus { outline: 2px solid rgba(28,126,214,0.25); border-col
   border-radius: 20px;
 }
 
+.badges {
+  margin: 5px;
+}
+
 @media screen and (max-width: 768px) {
   .brand-logo {
     display: none;

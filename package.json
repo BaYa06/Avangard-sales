@@ -1,13 +1,12 @@
 {
-  "name": "sales-board-server-sqljs",
+  "name": "sales-board",
   "version": "1.0.0",
-  "description": "Server-backed sales board with sql.js (no native compilation)",
-  "main": "server/server.js",
+  "type": "module",
+  "engines": { "node": ">=18" },
   "scripts": {
-    "start": "node server/server.js"
+    "deploy": "vercel --prod"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "sql.js": "^1.9.0"
+    "@vercel/postgres": "^0.9.0"
   }
 }
