@@ -1,4 +1,6 @@
-// /api/aggregates?from=YYYY-MM-DD&to=YYYY-MM-DD[&managerId=<uuid>]
+// /api/aggregates?from=YYYY-MM-DD&to=YYYY-MM-DD[&managerId=<uuid>][&format=full]
+// По умолчанию ВОЗВРАЩАЕМ МАССИВ (для совместимости с app.js)
+// Если нужен полный объект — добавь ?format=full
 import { sql } from '@vercel/postgres';
 import { ensureSchema } from '../db.js';
 
@@ -6,36 +8,31 @@ export default async function handler(req, res) {
   try {
     await ensureSchema();
 
-    const { from = '2000-01-01', to = '2100-01-01', managerId } = req.query;
+    const { from = '2000-01-01', to = '2100-01-01', managerId, format } = req.query;
     const hasManager = managerId && String(managerId).trim() !== '';
 
-    // ВАЖНО: никаких вложенных `sql` — только if/else.
-    const queryWithJoin = hasManager
-      ? sql`
-        SELECT e.id, e.date, e.manager_id, e.sales_count, e.people, e.tour, e.amount, e.comment,
-               m.name  AS manager_name,
-               m.target AS manager_target,
-               e.created_at
-        FROM events e
-        LEFT JOIN managers m ON m.id = e.manager_id
-        WHERE e.date >= ${from} AND e.date <= ${to}
-          AND e.manager_id = ${managerId}
-        ORDER BY e.date DESC, e.created_at DESC
-      `
-      : sql`
-        SELECT e.id, e.date, e.manager_id, e.sales_count, e.people, e.tour, e.amount, e.comment,
-               m.name  AS manager_name,
-               m.target AS manager_target,
-               e.created_at
-        FROM events e
-        LEFT JOIN managers m ON m.id = e.manager_id
-        WHERE e.date >= ${from} AND e.date <= ${to}
-        ORDER BY e.date DESC, e.created_at DESC
-      `;
+    const rows = hasManager
+      ? await sql`
+          SELECT e.id, e.date, e.manager_id, e.sales_count, e.people, e.tour, e.amount, e.comment,
+                 m.name AS manager_name, m.target AS manager_target, e.created_at
+          FROM events e
+          LEFT JOIN managers m ON m.id = e.manager_id
+          WHERE e.date >= ${from} AND e.date <= ${to}
+            AND e.manager_id = ${managerId}
+          ORDER BY e.date DESC, e.created_at DESC
+        `
+      : await sql`
+          SELECT e.id, e.date, e.manager_id, e.sales_count, e.people, e.tour, e.amount, e.comment,
+                 m.name AS manager_name, m.target AS manager_target, e.created_at
+          FROM events e
+          LEFT JOIN managers m ON m.id = e.manager_id
+          WHERE e.date >= ${from} AND e.date <= ${to}
+          ORDER BY e.date DESC, e.created_at DESC
+        `;
 
-    const { rows: events } = await queryWithJoin;
+    const events = rows.rows;
 
-    // Totals
+    // totals
     let totalSales = 0, totalPeople = 0, totalAmount = 0;
     for (const e of events) {
       totalSales  += Number(e.sales_count || 0);
@@ -43,7 +40,7 @@ export default async function handler(req, res) {
       totalAmount += Number(e.amount || 0);
     }
 
-    // Агрегация по менеджерам
+    // агрегируем по менеджерам
     const map = new Map();
     for (const e of events) {
       const key = e.manager_id || '—';
@@ -66,6 +63,12 @@ export default async function handler(req, res) {
     const byManager = Array.from(map.values())
       .sort((a, b) => b.people - a.people || b.sales - a.sales);
 
+    // ✅ ПО УМОЛЧАНИЮ отдаем МАССИВ (совместимо с app.js: todayAgg.forEach(...))
+    if (format !== 'full') {
+      return res.status(200).json(byManager);
+    }
+
+    // опционально — полный ответ
     return res.status(200).json({
       range: { from, to },
       totals: { sales: totalSales, people: totalPeople, amount: totalAmount },
