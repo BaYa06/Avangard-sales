@@ -25,6 +25,9 @@
     const filterSel=$("#filter-manager"); filterSel.innerHTML='<option value="">Все менеджеры</option>';
     rows.forEach(m=>{ const o=document.createElement("option"); o.value=m.id;o.textContent=m.name; sel.appendChild(o); const o2=document.createElement("option"); o2.value=m.id;o2.textContent=m.name; filterSel.appendChild(o2); });
     renderManagersTable(rows);
+    managersById = Object.fromEntries(rows.map(m => [String(m.id), m]));
+    if(rows.length) sel.value = rows[0].id;
+    renderManagersTable(rows);
   }
   function renderManagersTable(rows){
     const tb=$("#mgr-table tbody"); tb.innerHTML="";
@@ -45,7 +48,9 @@
   $("#add-date").value=todayStr();
   $("#add-form").addEventListener("submit", async (e)=>{
     e.preventDefault();
-    const payload={ date:$("#add-date").value, managerId:$("#add-manager").value, salesCount:Math.max(1,Number($("#add-sales").value||1)), people:Math.max(1,Number($("#add-people").value||1)), tour:$("#add-tour").value.trim(), amount:Number($("#add-amount").value||0), comment:$("#add-comment").value.trim() };
+    const mgrVal = $("#add-manager").value; 
+    if(!mgrVal){ toast("Выберите менеджера"); return; }
+    const payload = { date:$("#add-date").value, managerId:Number(mgrVal), salesCount:Math.max(1,Number($("#add-sales").value||1)), people:Math.max(1,Number($("#add-people").value||1)), tour:$("#add-tour").value.trim(), amount:Number($("#add-amount").value||0), comment:$("#add-comment").value.trim() };
     await api("/api/events",{method:"POST",body:JSON.stringify(payload)});
     $("#add-form").reset(); $("#add-date").value=todayStr(); $("#add-sales").value=1; $("#add-people").value=1; toast("Сделка добавлена"); await refreshAll();
   });
@@ -56,6 +61,20 @@
   $("#filter-manager").addEventListener("change",refreshEvents);
   fromInput.addEventListener("change",refreshEvents);
   toInput.addEventListener("change",refreshEvents);
+
+  // === Date formatting helpers & manager cache ===
+  let managersById = {}; // наполняем в loadManagers()
+
+  function isoToYmd(s){ return (typeof s === "string" && s.includes("T")) ? s.slice(0,10) : s; }
+  function ymdToDmy(s){ if(!s) return ""; const [y,m,d] = s.split("-"); return `${d}.${m}.${y}`; }
+  function fmtDate(x){
+    if(!x) return "";
+    const s = typeof x === "string" ? x : (x?.toISOString?.() ?? "");
+    const ymd = isoToYmd(s);
+    return ymd && ymd.includes("-") ? ymdToDmy(ymd) : s;
+  }
+
+
   async function refreshEvents(){
     const [from,to]=calcRange(periodSel.value,fromInput,toInput);
     const params=new URLSearchParams({from,to,managerId:$("#filter-manager").value}).toString();
@@ -64,7 +83,7 @@
     let sales=0, people=0;
     rows.forEach(ev=>{ sales+=ev.salesCount||1; people+=ev.people||0;
       const tr=document.createElement("tr");
-      tr.innerHTML=`<td>${ev.date}</td><td>${escapeHtml(ev.managerName||"—")}</td><td>${ev.salesCount||1}</td><td>${ev.people||0}</td><td>${escapeHtml(ev.tour||"")}</td><td>${(ev.amount||0).toLocaleString()}</td><td class="mini">${escapeHtml(ev.comment||"")}</td><td><div class="row-actions"><button class="btn" data-action="edit" data-id="${ev.id}">Изм.</button><button class="btn danger" data-action="del" data-id="${ev.id}">Удалить</button></div></td>`;
+      tr.innerHTML=`<td>${fmtDate(ev.date)}</td><td>${escapeHtml(ev.managerName ?? managersById[String(ev.managerId)]?.name ?? "—")}</td><td>${ev.salesCount||1}</td><td>${ev.people||0}</td><td>${escapeHtml(ev.tour||"")}</td><td>${(ev.amount||0).toLocaleString()}</td><td class="mini">${escapeHtml(ev.comment||"")}</td><td><div class="row-actions"><button class="btn" data-action="edit" data-id="${ev.id}">Изм.</button><button class="btn danger" data-action="del" data-id="${ev.id}">Удалить</button></div></td>`;
       tb.appendChild(tr);
     });
     $("#events-totals").textContent=`Итого: ${sales} продаж, ${people} людей`;
