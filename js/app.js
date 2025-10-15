@@ -101,13 +101,30 @@
     $("#events-totals").textContent=`Итого: ${sales} продаж, ${people} людей`;
     tb.onclick=async (e)=>{ const btn=e.target.closest("button"); if(!btn) return; const id=btn.dataset.id; const action=btn.dataset.action;
       if(action==="del"){ if(confirm("Удалить запись?")){ await api(`/api/events/${id}`,{method:"DELETE"}); await refreshAll(); } }
-      else if(action==="edit"){ const row=rows.find(x=>x.id===id); if(!row) return;
-        const nd=prompt("Дата (YYYY-MM-DD):",row.date); if(nd===null) return;
-        const np=prompt("Людей:",row.people||1); if(np===null) return;
-        const ns=prompt("Продаж:",row.salesCount||1); if(ns===null) return;
-        await api(`/api/events/${id}`,{method:"PUT",body:JSON.stringify({ date:/^\d{4}-\d{2}-\d{2}$/.test(nd)?nd:row.date, people:Math.max(1,Number(np)||row.people), salesCount:Math.max(1,Number(ns)||row.salesCount) })});
+      else if(action==="edit"){
+        const row = rows.find(x=>x.id===id); if(!row) return;
+        // список менеджеров для подсказки
+        const mgrList = Object.values(managersById).map(m => `${m.id}: ${m.name}`).join('\n');
+        const curMgrId = row.managerId ?? row.manager_id ?? row.manager ?? "";
+        const mid = prompt("Менеджер (введите ID):\n"+mgrList, curMgrId ? String(curMgrId) : "");
+        if(mid === null) return;
+
+        const nd = prompt("Дата (YYYY-MM-DD):", row.date); if(nd===null) return;
+        const np = prompt("Людей:", row.people||1); if(np===null) return;
+        const ns = prompt("Продаж:", row.salesCount||1); if(ns===null) return;
+
+        await api(`/api/events/${id}`, {
+          method:"PUT",
+          body: JSON.stringify({
+            date: /^\d{4}-\d{2}-\d{2}$/.test(nd) ? nd : row.date,
+            people: Math.max(1, Number(np) || row.people),
+            salesCount: Math.max(1, Number(ns) || row.salesCount),
+            managerId: Number(mid) || curMgrId || null   // <-- добавили менеджера
+          })
+        });
         await refreshAll();
       }
+
     };
   }
   const lbSel=$("#lb-period"); const lbFrom=$("#lb-from"); const lbTo=$("#lb-to");
