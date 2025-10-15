@@ -24,7 +24,6 @@
     const sel=$("#add-manager"); sel.innerHTML="";
     const filterSel=$("#filter-manager"); filterSel.innerHTML='<option value="">Все менеджеры</option>';
     rows.forEach(m=>{ const o=document.createElement("option"); o.value=m.id;o.textContent=m.name; sel.appendChild(o); const o2=document.createElement("option"); o2.value=m.id;o2.textContent=m.name; filterSel.appendChild(o2); });
-    renderManagersTable(rows);
     managersById = Object.fromEntries(rows.map(m => [String(m.id), m]));
     if(rows.length) sel.value = rows[0].id;
     renderManagersTable(rows);
@@ -83,7 +82,20 @@
     let sales=0, people=0;
     rows.forEach(ev=>{ sales+=ev.salesCount||1; people+=ev.people||0;
       const tr=document.createElement("tr");
-      tr.innerHTML=`<td>${fmtDate(ev.date)}</td><td>${escapeHtml(ev.managerName ?? managersById[String(ev.managerId)]?.name ?? "—")}</td><td>${ev.salesCount||1}</td><td>${ev.people||0}</td><td>${escapeHtml(ev.tour||"")}</td><td>${(ev.amount||0).toLocaleString()}</td><td class="mini">${escapeHtml(ev.comment||"")}</td><td><div class="row-actions"><button class="btn" data-action="edit" data-id="${ev.id}">Изм.</button><button class="btn danger" data-action="del" data-id="${ev.id}">Удалить</button></div></td>`;
+      const evMgrId = ev.managerId ?? ev.manager_id ?? ev.manager ?? ev.mgrId ?? ev.mgr_id;
+      const mgrName = ev.managerName ?? managersById[String(evMgrId)]?.name ?? "—";
+      tr.innerHTML = `<td>${fmtDate(ev.date)}</td>
+        <td>${escapeHtml(mgrName)}</td>
+        <td>${ev.salesCount||1}</td>
+        <td>${ev.people||0}</td>
+        <td>${escapeHtml(ev.tour||"")}</td>
+        <td>${(ev.amount||0).toLocaleString()}</td>
+        <td class="mini">${escapeHtml(ev.comment||"")}</td>
+        <td><div class="row-actions">
+          <button class="btn" data-action="edit" data-id="${ev.id}">Изм.</button>
+          <button class="btn danger" data-action="del" data-id="${ev.id}">Удалить</button>
+        </div></td>`;
+
       tb.appendChild(tr);
     });
     $("#events-totals").textContent=`Итого: ${sales} продаж, ${people} людей`;
