@@ -49,19 +49,21 @@
     e.preventDefault();
     const mgrVal = $("#add-manager").value; 
     if(!mgrVal){ toast("Выберите менеджера"); return; }
-    const idNum = Number(mgrVal);
+
+    const idStr = String(mgrVal).trim();   // ✅ оставляем UUID строкой
     const payload = {
       date: $("#add-date").value,
-      managerId: idNum,    // camelCase
-      manager_id: idNum,   // snake_case (на случай, если бэкенд ждёт такое имя)
+      managerId: idStr,    // ✅
+      manager_id: idStr,   // ✅ (на случай snake_case на бэке)
       salesCount: Math.max(1, Number($("#add-sales").value||1)),
       people: Math.max(1, Number($("#add-people").value||1)),
       tour: $("#add-tour").value.trim(),
       amount: Number($("#add-amount").value||0),
       comment: $("#add-comment").value.trim()
     };
+    await api("/api/events",{ method:"POST", body: JSON.stringify(payload) });
 
-    await api("/api/events",{method:"POST",body:JSON.stringify(payload)});
+
     $("#add-form").reset(); $("#add-date").value=todayStr(); $("#add-sales").value=1; $("#add-people").value=1; toast("Сделка добавлена"); await refreshAll();
   });
   $("#add-reset").addEventListener("click",()=>{ $("#add-form").reset(); $("#add-date").value=todayStr(); $("#add-sales").value=1; $("#add-people").value=1; });
@@ -124,16 +126,19 @@
         const np = prompt("Людей:", row.people||1); if(np===null) return;
         const ns = prompt("Продаж:", row.salesCount||1); if(ns===null) return;
 
+        const newMgr = (mid ?? "").trim() || String(curMgrId || ""); // ✅ строка-UUID
+
         await api(`/api/events/${id}`, {
           method:"PUT",
           body: JSON.stringify({
             date: /^\d{4}-\d{2}-\d{2}$/.test(nd) ? nd : row.date,
             people: Math.max(1, Number(np) || row.people),
             salesCount: Math.max(1, Number(ns) || row.salesCount),
-            managerId: Number(mid) || curMgrId || null,   // camelCase
-            manager_id: Number(mid) || curMgrId || null   // snake_case
+            managerId: newMgr || null,   // ✅ строка
+            manager_id: newMgr || null   // ✅ строка
           })
         });
+
 
         await refreshAll();
       }
