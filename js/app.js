@@ -49,7 +49,18 @@
     e.preventDefault();
     const mgrVal = $("#add-manager").value; 
     if(!mgrVal){ toast("Выберите менеджера"); return; }
-    const payload = { date:$("#add-date").value, managerId:Number(mgrVal), salesCount:Math.max(1,Number($("#add-sales").value||1)), people:Math.max(1,Number($("#add-people").value||1)), tour:$("#add-tour").value.trim(), amount:Number($("#add-amount").value||0), comment:$("#add-comment").value.trim() };
+    const idNum = Number(mgrVal);
+    const payload = {
+      date: $("#add-date").value,
+      managerId: idNum,    // camelCase
+      manager_id: idNum,   // snake_case (на случай, если бэкенд ждёт такое имя)
+      salesCount: Math.max(1, Number($("#add-sales").value||1)),
+      people: Math.max(1, Number($("#add-people").value||1)),
+      tour: $("#add-tour").value.trim(),
+      amount: Number($("#add-amount").value||0),
+      comment: $("#add-comment").value.trim()
+    };
+
     await api("/api/events",{method:"POST",body:JSON.stringify(payload)});
     $("#add-form").reset(); $("#add-date").value=todayStr(); $("#add-sales").value=1; $("#add-people").value=1; toast("Сделка добавлена"); await refreshAll();
   });
@@ -119,9 +130,11 @@
             date: /^\d{4}-\d{2}-\d{2}$/.test(nd) ? nd : row.date,
             people: Math.max(1, Number(np) || row.people),
             salesCount: Math.max(1, Number(ns) || row.salesCount),
-            managerId: Number(mid) || curMgrId || null   // <-- добавили менеджера
+            managerId: Number(mid) || curMgrId || null,   // camelCase
+            manager_id: Number(mid) || curMgrId || null   // snake_case
           })
         });
+
         await refreshAll();
       }
 
