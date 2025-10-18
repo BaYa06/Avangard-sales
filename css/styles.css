@@ -106,4 +106,31 @@ input:focus, select:focus { outline: 2px solid rgba(28,126,214,0.25); border-col
   .table {
     min-width: auto;
   }
+
+  /* New design */
+    .app-header{
+      position: fixed; left: 0; bottom: 20px; top: auto;
+      height: 48px;
+      z-index: 50;
+      background: #0b132b;
+      border-top: 1px solid #eee;
+      padding: 0;
+      border-radius: 20px;
+      margin-left: 10px;
+    }
+
+    button.tab {
+      margin: 5px;
+    
+    }
+
+    .tabs {
+      margin-left: 5px;
+      margin-right: 5px;
+    }
+
+    .fab {
+      width: 48px;
+      height: 48px;
+    }
 }

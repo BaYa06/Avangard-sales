@@ -19,6 +19,7 @@
   <meta name="theme-color" content="#0b132b">
   <link rel="apple-touch-icon" href="assets/icon.png">
   <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/css/all.min.css">
 </head>
 <body>
   <header class="app-header">
@@ -27,11 +28,24 @@
       <div class="brand-title">Продажи </div>
     </div>
     <nav class="tabs" id="tabs">
-      <button class="tab active" data-tab="dashboard">Дашборд</button>
-      <button class="tab" data-tab="add">Добавить</button>
-      <button class="tab" data-tab="events">События</button>
-      <button class="tab" data-tab="leaderboard">Лидерборд</button>
-      <button class="tab" data-tab="settings">Настройки</button>
+      <button class="tab active" data-tab="dashboard" aria-label="Дашборд" title="Дашборд">
+        <i class="fa-solid fa-chart-column fa-lg fa-fw"></i>
+      </button>
+      <button class="tab" data-tab="add" aria-label="Добавить" title="Добавить">
+        <i class="fa-solid fa-plus fa-lg fa-fw"></i>
+      </button>
+      <button class="tab" data-tab="events" aria-label="События" title="События">
+        <i class="fa-regular fa-calendar-days fa-lg fa-fw"></i>
+      </button>
+      <button class="tab" data-tab="leaderboard" aria-label="Лидерборд" title="Лидерборд">
+        <i class="fa-solid fa-trophy fa-lg fa-fw"></i>
+      </button>
+      <button class="tab" data-tab="settings" aria-label="Настройка" title="Настройка">
+        <i class="fa-solid fa-gear"></i>
+      </button>
+      <button class="tab" data-tab="me" aria-label="Личный кабинет" title="Личный кабинет">
+        <i class="fa-solid fa-user"></i>
+      </button>
     </nav>
   </header>
 
