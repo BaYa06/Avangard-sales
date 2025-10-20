@@ -30,7 +30,8 @@ export default async function handler(req, res) {
         people: Number(b.people || 1),
         tour: b.tour || null,
         amount: Number(b.amount || 0),
-        comment: b.comment || null
+        comment: b.comment || null,
+        currency: b.currency || 'KGS'
       });
       return res.status(201).json({ ok: true });
     }

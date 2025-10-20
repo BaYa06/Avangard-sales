@@ -44,8 +44,8 @@ export const db = {
                 ORDER BY date DESC, created_at DESC`;
     },
     insert: (e) => sql`
-        INSERT INTO events (id,date,manager_id,sales_count,people,tour,amount,comment)
-        VALUES (${e.id}, ${e.date}, ${e.manager_id}, ${e.sales_count}, ${e.people}, ${e.tour}, ${e.amount}, ${e.comment})
+        INSERT INTO events (id,date,manager_id,sales_count,people,tour,amount,comment,currency)
+        VALUES (${e.id}, ${e.date}, ${e.manager_id}, ${e.sales_count}, ${e.people}, ${e.tour}, ${e.amount}, ${e.comment}, ${e.currency ?? 'KGS'})
     `,
     delete: (id) => sql`DELETE FROM events WHERE id = ${id}`
     }

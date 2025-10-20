@@ -53,13 +53,14 @@
     const idStr = String(mgrVal).trim();   // ✅ оставляем UUID строкой
     const payload = {
       date: $("#add-date").value,
-      managerId: idStr,    // ✅
-      manager_id: idStr,   // ✅ (на случай snake_case на бэке)
+      managerId: idStr,
+      manager_id: idStr,
       salesCount: Math.max(1, Number($("#add-sales").value||1)),
       people: Math.max(1, Number($("#add-people").value||1)),
       tour: $("#add-tour").value.trim(),
       amount: Number($("#add-amount").value||0),
-      comment: $("#add-comment").value.trim()
+      comment: $("#add-comment").value.trim(),
+      currency: ($("#add-currency")?.value || "KGS")
     };
     await api("/api/events",{ method:"POST", body: JSON.stringify(payload) });
 
@@ -103,6 +104,7 @@
         <td>${ev.people||0}</td>
         <td>${escapeHtml(ev.tour||"")}</td>
         <td>${(ev.amount||0).toLocaleString()}</td>
+        <td>${currencyLabel(ev.currency)}</td>
         <td class="mini">${escapeHtml(ev.comment||"")}</td>
         <td><div class="row-actions">
           <button class="btn" data-action="edit" data-id="${ev.id}">Изм.</button>
@@ -181,6 +183,12 @@
   $("#file-restore").addEventListener("change", async (e)=>{ const f=e.target.files?.[0]; if(!f) return; const text=await f.text(); await api("/api/restore",{method:"POST",body:text}); toast("База восстановлена"); await loadManagers(); await refreshAll(); e.target.value=""; });
   $("#btn-reset").addEventListener("click", async ()=>{ if(confirm("Удалить все события?")){ await api("/api/reset",{method:"POST"}); await refreshAll(); }});
   function escapeHtml(str){ return String(str||"").replace(/[&<>"']/g, s=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[s])); }
+  function currencyLabel(code){
+    const c=(code||'KGS').toUpperCase();
+    if(c==='USD') return '$';
+    if(c==='KZT') return '₸';
+    return 'сом'; // KGS
+  }
   function toast(msg){ const d=document.createElement("div"); d.textContent=msg; d.style.position="fixed"; d.style.bottom="90px"; d.style.right="18px"; d.style.background="#0b132b"; d.style.color="#fff"; d.style.padding="10px 14px"; d.style.borderRadius="12px"; d.style.boxShadow="0 8px 24px rgba(2,8,23,.06)"; document.body.appendChild(d); setTimeout(()=>d.remove(),1800); }
   async function refreshAll(){ await refreshDashboard(); await refreshEvents(); await renderLeaderboard(); }
   (async function init(){ try{ await loadManagers(); periodSel.value="today"; const now=new Date(); $("#from-date").value=toYMD(startOfWeek(now)); $("#to-date").value=toYMD(endOfWeek(now)); $("#lb-period").value="week"; $("#lb-from").value=toYMD(startOfWeek(now)); $("#lb-to").value=toYMD(endOfWeek(now)); await refreshAll(); show("dashboard"); if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{});} }catch(err){ console.error(err); alert("Ошибка инициализации: "+err.message); } })();
