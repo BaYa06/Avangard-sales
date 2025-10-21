@@ -8,6 +8,11 @@
   function endOfWeek(d){ const s=startOfWeek(d); const res=new Date(s); res.setDate(s.getDate()+6); return res; }
   function startOfMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
   function endOfMonth(d){ return new Date(d.getFullYear(), d.getMonth()+1, 0); }
+  function dmyToYmd(s){
+    const m = String(s||"").match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+    if(!m) return null;
+    return `${m[3]}-${m[2]}-${m[1]}`;
+  }
   function calcRange(kind, fromEl, toEl){
     const now=new Date();
     if(kind==="today") return [toYMD(now), toYMD(now)];
@@ -23,6 +28,15 @@
     const rows=await api("/api/managers");
     const sel=$("#add-manager"); sel.innerHTML="";
     const filterSel=$("#filter-manager"); filterSel.innerHTML='<option value="">Все менеджеры</option>';
+    const editSel = $("#edit-manager");
+    if (editSel) {
+      editSel.innerHTML = "";
+      rows.forEach(m => {
+        const o = document.createElement("option");
+        o.value = m.id; o.textContent = m.name;
+        editSel.appendChild(o);
+      });
+    }
     rows.forEach(m=>{ const o=document.createElement("option"); o.value=m.id;o.textContent=m.name; sel.appendChild(o); const o2=document.createElement("option"); o2.value=m.id;o2.textContent=m.name; filterSel.appendChild(o2); });
     managersById = Object.fromEntries(rows.map(m => [String(m.id), m]));
     const loginSel = $("#login-manager");
@@ -131,31 +145,7 @@
       if(action==="del"){ if(confirm("Удалить запись?")){ await api(`/api/events/${id}`,{method:"DELETE"}); await refreshAll(); } }
       else if(action==="edit"){
         const row = rows.find(x=>x.id===id); if(!row) return;
-        // список менеджеров для подсказки
-        const mgrList = Object.values(managersById).map(m => `${m.id}: ${m.name}`).join('\n');
-        const curMgrId = row.managerId ?? row.manager_id ?? row.manager ?? "";
-        const mid = prompt("Менеджер (введите ID):\n"+mgrList, curMgrId ? String(curMgrId) : "");
-        if(mid === null) return;
-
-        const nd = prompt("Дата (YYYY-MM-DD):", row.date); if(nd===null) return;
-        const np = prompt("Людей:", row.people||1); if(np===null) return;
-        const ns = prompt("Продаж:", row.salesCount||1); if(ns===null) return;
-
-        const newMgr = (mid ?? "").trim() || String(curMgrId || ""); // ✅ строка-UUID
-
-        await api(`/api/events/${id}`, {
-          method:"PUT",
-          body: JSON.stringify({
-            date: /^\d{4}-\d{2}-\d{2}$/.test(nd) ? nd : row.date,
-            people: Math.max(1, Number(np) || row.people),
-            salesCount: Math.max(1, Number(ns) || row.salesCount),
-            managerId: newMgr || null,   // ✅ строка
-            manager_id: newMgr || null   // ✅ строка
-          })
-        });
-
-
-        await refreshAll();
+        openEditModal(row);
       }
 
     };
@@ -239,7 +229,78 @@
   }
   function toast(msg){ const d=document.createElement("div"); d.textContent=msg; d.style.position="fixed"; d.style.bottom="90px"; d.style.right="18px"; d.style.background="#0b132b"; d.style.color="#fff"; d.style.padding="10px 14px"; d.style.borderRadius="12px"; d.style.boxShadow="0 8px 24px rgba(2,8,23,.06)"; document.body.appendChild(d); setTimeout(()=>d.remove(),1800); }
   async function refreshAll(){ await refreshDashboard(); await refreshEvents(); await renderLeaderboard(); }
+  function openEditModal(row){
+    // Преобразуем дату к dd.mm.yyyy
+    const ymd = typeof row.date === "string" ? row.date.slice(0,10) : "";
+    const ddmmyyyy = (function(){
+      if(!ymd) return "";
+      const [y,m,d] = ymd.split("-");
+      return `${d}.${m}.${y}`;
+    })();
+
+    $("#edit-id").value = row.id;
+    $("#edit-date").value = ddmmyyyy;
+
+    const evMgrId = row.managerId ?? row.manager_id ?? row.manager ?? row.mgrId ?? row.mgr_id;
+    $("#edit-manager").value = String(evMgrId || "");
+
+    $("#edit-sales").value = Number(row.salesCount || 1);
+    $("#edit-people").value = Number(row.people || 1);
+    $("#edit-tour").value = row.tour || "";
+    $("#edit-amount").value = Number(row.amount || 0);
+    $("#edit-currency").value = (row.currency || "KGS").toUpperCase();
+    $("#edit-comment").value = row.comment || "";
+
+    $("#edit-modal").classList.remove("hidden");
+  }
+
+  function closeEditModal(){
+    $("#edit-modal").classList.add("hidden");
+  }
+
   (async function init(){ try{ await loadManagers(); 
+
+    // Сохранить изменения
+    const editForm = $("#edit-form");
+    if (editForm) {
+      editForm.addEventListener("submit", async (e)=>{
+        e.preventDefault();
+
+        const id = $("#edit-id").value;
+        const dmy = $("#edit-date").value.trim();
+        const ymd = dmyToYmd(dmy) || null; // валидируем формат дд.мм.гггг
+
+        if(!ymd){ alert("Неверный формат даты. Используйте дд.мм.гггг"); return; }
+
+        const payload = {
+          date: ymd,
+          managerId: $("#edit-manager").value,
+          manager_id: $("#edit-manager").value, // на всякий случай для бэка
+          salesCount: Math.max(1, Number($("#edit-sales").value||1)),
+          people: Math.max(1, Number($("#edit-people").value||1)),
+          tour: $("#edit-tour").value.trim() || null,
+          amount: Number($("#edit-amount").value||0),
+          comment: $("#edit-comment").value.trim() || null,
+          currency: ($("#edit-currency").value || "KGS")
+        };
+
+        try {
+          await api(`/api/events/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+          closeEditModal();
+          toast("Сделка обновлена");
+          await refreshAll();
+        } catch (err) {
+          console.error(err);
+          alert("Не удалось сохранить изменения");
+        }
+      });
+    }
+
+    // Отмена
+    const editCancel = $("#edit-cancel");
+    if (editCancel) editCancel.addEventListener("click", closeEditModal);
+
+
     const loginForm = $("#login-form");
     if (loginForm) {
       loginForm.addEventListener("submit", async (e) => {

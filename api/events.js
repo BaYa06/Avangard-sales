@@ -1,4 +1,6 @@
 // /api/events -> GET, POST, DELETE
+import { sql } from '@vercel/postgres';
+
 import { db, ensureSchema } from '../db.js';
 import { randomUUID } from 'node:crypto';
 
@@ -44,7 +46,28 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, id });
     }
 
-    res.setHeader('Allow', 'GET, POST, DELETE');
+    if (req.method === 'PUT') {
+      const b = parseBody(req);
+      const id = req.query?.id || b.id;
+      if (!id) return res.status(400).json({ error: 'id required' });
+
+      const patch = [];
+      if (b.date)        patch.push(sql`date = ${b.date}`);
+      if (b.managerId)   patch.push(sql`manager_id = ${b.managerId}`);
+      if (b.salesCount)  patch.push(sql`sales_count = ${Number(b.salesCount)}`);
+      if (b.people)      patch.push(sql`people = ${Number(b.people)}`);
+      if (b.tour !== undefined)     patch.push(sql`tour = ${b.tour}`);
+      if (b.amount !== undefined)   patch.push(sql`amount = ${Number(b.amount)}`);
+      if (b.comment !== undefined)  patch.push(sql`comment = ${b.comment}`);
+      if (b.currency)               patch.push(sql`currency = ${b.currency}`);
+
+      if (!patch.length) return res.status(200).json({ ok: true, id });
+
+      await sql`UPDATE events SET ${sql.join(patch, sql`, `)} WHERE id = ${id}`;
+      return res.status(200).json({ ok: true, id });
+    }
+
+    res.setHeader('Allow', 'GET, POST, PUT, DELETE');
     return res.status(405).end();
   } catch (e) {
     console.error(e);

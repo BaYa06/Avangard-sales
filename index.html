@@ -286,6 +286,50 @@
       </div>
     </section>
 
+    <!-- EDIT SALE MODAL -->
+    <div id="edit-modal" class="modal hidden">
+      <div class="modal-content card">
+        <div class="card-title">Изменить продажу</div>
+        <form id="edit-form" class="form">
+          <input type="hidden" id="edit-id">
+
+          <label>Дата</label>
+          <input type="text" id="edit-date" placeholder="дд.мм.гггг" required>
+
+          <label>Менеджер</label>
+          <select id="edit-manager" required></select>
+
+          <label>Продаж</label>
+          <input type="number" id="edit-sales" min="1" required>
+
+          <label>Люди</label>
+          <input type="number" id="edit-people" min="1" required>
+
+          <label>Тур</label>
+          <input type="text" id="edit-tour">
+
+          <label>Сумма</label>
+          <input type="number" id="edit-amount" min="0" step="0.01">
+
+          <label>Валюта</label>
+          <select id="edit-currency">
+            <option value="KGS">сом (KGS)</option>
+            <option value="KZT">тенге (₸, KZT)</option>
+            <option value="USD">$ (USD)</option>
+          </select>
+
+          <label>Комментарий</label>
+          <input type="text" id="edit-comment">
+
+          <div class="row" style="gap:.5rem; margin-top:.5rem;">
+            <button class="btn" type="submit">Сохранить</button>
+            <button class="btn" type="button" id="edit-cancel">Отмена</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+
   </main>
 
   <button class="fab" id="fab-add" title="Добавить продажу">＋</button>

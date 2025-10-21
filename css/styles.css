@@ -63,6 +63,12 @@ input:focus, select:focus { outline: 2px solid rgba(28,126,214,0.25); border-col
 .muted { color: var(--muted); font-size: 13px; }
 .warn-text { color: #b08900; }
 
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,.35);
+  display: flex; align-items: center; justify-content: center; z-index: 9999; }
+.modal.hidden { display: none; }
+.modal .modal-content { width: 92%; max-width: 520px; }
+
+
 #events-totals.totals {
   margin-top: 10px;
   background-color: #ffd43b;
