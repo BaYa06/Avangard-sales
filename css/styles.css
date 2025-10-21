@@ -90,6 +90,35 @@ input:focus, select:focus { outline: 2px solid rgba(28,126,214,0.25); border-col
   width: 40%;
 }
 
+#login-pass {
+  width: 76.6%;
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+}
+
+#login-manager {
+  padding: 10px 16px;
+}
+
+.second_row_log {
+  margin-top: 10px;
+}
+
+.card-title {
+  text-align: center;
+}
+
+.big {
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.row {
+  text-align: center;
+}
+
 @media screen and (max-width: 768px) {
   .brand-logo {
     display: none;
