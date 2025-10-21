@@ -1,8 +1,9 @@
 // /api/events -> GET, POST, DELETE
-import { sql } from '@vercel/postgres';
 
 import { db, ensureSchema } from '../db.js';
 import { randomUUID } from 'node:crypto';
+import { sql } from '@vercel/postgres'; // ← добавь эту строку
+
 
 function parseBody(req) {
   if (!req.body) return {};
@@ -48,24 +49,29 @@ export default async function handler(req, res) {
 
     if (req.method === 'PUT') {
       const b = parseBody(req);
-      const id = req.query?.id || b.id;
+
+      // id берём из query (?id=...), из тела, или из пути
+      const idFromPath = (req.url || '').split('?')[0].split('/').pop();
+      const id = req.query?.id || b.id || idFromPath;
       if (!id) return res.status(400).json({ error: 'id required' });
 
-      const patch = [];
-      if (b.date)        patch.push(sql`date = ${b.date}`);
-      if (b.managerId)   patch.push(sql`manager_id = ${b.managerId}`);
-      if (b.salesCount)  patch.push(sql`sales_count = ${Number(b.salesCount)}`);
-      if (b.people)      patch.push(sql`people = ${Number(b.people)}`);
-      if (b.tour !== undefined)     patch.push(sql`tour = ${b.tour}`);
-      if (b.amount !== undefined)   patch.push(sql`amount = ${Number(b.amount)}`);
-      if (b.comment !== undefined)  patch.push(sql`comment = ${b.comment}`);
-      if (b.currency)               patch.push(sql`currency = ${b.currency}`);
+      // Обновляем только присланные значения, остальные оставляем как есть
+      await sql`
+        UPDATE events SET
+          date        = COALESCE(${b.date}, date),
+          manager_id  = COALESCE(${b.managerId}, manager_id),
+          sales_count = COALESCE(${b.salesCount}, sales_count),
+          people      = COALESCE(${b.people}, people),
+          tour        = COALESCE(${b.tour}, tour),
+          amount      = COALESCE(${b.amount}, amount),
+          comment     = COALESCE(${b.comment}, comment),
+          currency    = COALESCE(${b.currency}, currency)
+        WHERE id = ${id}
+      `;
 
-      if (!patch.length) return res.status(200).json({ ok: true, id });
-
-      await sql`UPDATE events SET ${sql.join(patch, sql`, `)} WHERE id = ${id}`;
       return res.status(200).json({ ok: true, id });
     }
+
 
     res.setHeader('Allow', 'GET, POST, PUT, DELETE');
     return res.status(405).end();

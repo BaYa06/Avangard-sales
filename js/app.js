@@ -285,7 +285,7 @@
         };
 
         try {
-          await api(`/api/events/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+          await api(`/api/events?id=${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(payload) });
           closeEditModal();
           toast("Сделка обновлена");
           await refreshAll();
