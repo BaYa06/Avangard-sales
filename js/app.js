@@ -25,8 +25,21 @@
     const filterSel=$("#filter-manager"); filterSel.innerHTML='<option value="">Все менеджеры</option>';
     rows.forEach(m=>{ const o=document.createElement("option"); o.value=m.id;o.textContent=m.name; sel.appendChild(o); const o2=document.createElement("option"); o2.value=m.id;o2.textContent=m.name; filterSel.appendChild(o2); });
     managersById = Object.fromEntries(rows.map(m => [String(m.id), m]));
+    const loginSel = $("#login-manager");
+    if (loginSel) {
+      loginSel.innerHTML = "";
+      rows.forEach(m => {
+        const o = document.createElement("option"); o.value = m.id; o.textContent = m.name;
+        loginSel.appendChild(o);
+      });
+    }
+
+  if (rows.length && sel) sel.value = rows[0].id;
+  renderManagersTable(rows);
     if(rows.length) sel.value = rows[0].id;
     renderManagersTable(rows);
+
+    updateMeUI();
   }
   function renderManagersTable(rows){
     const tb=$("#mgr-table tbody"); tb.innerHTML="";
@@ -161,6 +174,33 @@
       const card=document.createElement("div"); card.className="lb-card"; card.innerHTML=`<div><div class="lb-title">${idx+1}. ${escapeHtml(r.managerName)} ${badge}</div><div class="badges"><span class="badge">Люди: <b>${r.people}</b></span><span class="badge">Продаж: <b>${r.sales}</b></span><span class="badge">Средняя группа: <b>${avg.toFixed(1)}</b></span><span class="badge">Цель/нед: <b>${r.target||0}</b></span><span class="badge">XP: <b>${xp}</b> | LVL ${level}</span></div><div class="progress"><div style="width:${pct}%"></div></div></div><div style="font-weight:800;font-size:20px;">${medal(idx)}</div>`; box.appendChild(card);
     });
   }
+  function updateMeUI(){
+    const a = getAuth();
+    const una = $("#me-unauth"), au = $("#me-auth");
+    if (!una || !au) return; // если секции нет — выходим
+
+    if (a) {
+      // Показ "вошёл"
+      una.classList.add("hidden");
+      au.classList.remove("hidden");
+      const name = managersById?.[String(a.managerId)]?.name || a.name || "—";
+      $("#me-name").textContent = `Вы вошли как: ${name}`;
+      // (опционально) фиксируем менеджера при добавлении
+      if ($("#add-manager")) {
+        $("#add-manager").value = a.managerId;
+        $("#add-manager").disabled = true; // можно убрать, если хочется менять вручную
+      }
+    } else {
+      // Показ "не вошёл"
+      au.classList.add("hidden");
+      una.classList.remove("hidden");
+      $("#me-name").textContent = "";
+      if ($("#add-manager")) {
+        $("#add-manager").disabled = false;
+      }
+    }
+  }
+
   async function refreshDashboard(){
     const now=new Date(); const [tdFrom,tdTo]=[toYMD(now),toYMD(now)]; const [wkFrom,wkTo]=[toYMD(startOfWeek(now)),toYMD(endOfWeek(now))]; const [moFrom,moTo]=[toYMD(startOfMonth(now)),toYMD(endOfMonth(now))];
     const todayRows=await api(`/api/events?from=${tdFrom}&to=${tdTo}`);
@@ -189,7 +229,71 @@
     if(c==='KZT') return '₸';
     return 'сом'; // KGS
   }
+  function getAuth(){
+    try { return JSON.parse(localStorage.getItem("auth") || "null"); }
+    catch { return null; }
+  }
+  function setAuth(obj){
+    if (obj) localStorage.setItem("auth", JSON.stringify(obj));
+    else localStorage.removeItem("auth");
+  }
   function toast(msg){ const d=document.createElement("div"); d.textContent=msg; d.style.position="fixed"; d.style.bottom="90px"; d.style.right="18px"; d.style.background="#0b132b"; d.style.color="#fff"; d.style.padding="10px 14px"; d.style.borderRadius="12px"; d.style.boxShadow="0 8px 24px rgba(2,8,23,.06)"; document.body.appendChild(d); setTimeout(()=>d.remove(),1800); }
   async function refreshAll(){ await refreshDashboard(); await refreshEvents(); await renderLeaderboard(); }
-  (async function init(){ try{ await loadManagers(); periodSel.value="today"; const now=new Date(); $("#from-date").value=toYMD(startOfWeek(now)); $("#to-date").value=toYMD(endOfWeek(now)); $("#lb-period").value="week"; $("#lb-from").value=toYMD(startOfWeek(now)); $("#lb-to").value=toYMD(endOfWeek(now)); await refreshAll(); show("dashboard"); if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{});} }catch(err){ console.error(err); alert("Ошибка инициализации: "+err.message); } })();
+  (async function init(){ try{ await loadManagers(); 
+    const loginForm = $("#login-form");
+    if (loginForm) {
+      loginForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const managerId = $("#login-manager").value;
+        const password  = $("#login-pass").value;
+        try {
+          const resp = await api("/api/auth", {
+            method: "POST",
+            body: JSON.stringify({ managerId, password })
+          });
+          if (resp?.ok) {
+            setAuth({ managerId, name: resp.name });
+            $("#login-pass").value = "";
+            toast("Вход выполнен");
+            updateMeUI();
+          } else {
+            alert(resp?.error || "Неверные данные");
+          }
+        } catch (err) {
+          console.error(err);
+          alert("Ошибка входа");
+        }
+      });
+    }
+
+    const btnChangePass = $("#btn-change-pass");
+    if (btnChangePass) {
+      btnChangePass.addEventListener("click", async () => {
+        const a = getAuth();
+        if (!a) { toast("Сначала войдите"); return; }
+        const np = prompt("Новый пароль:");
+        if (!np) return;
+        try {
+          const r = await api("/api/set-password", {
+            method: "POST",
+            body: JSON.stringify({ managerId: a.managerId, newPassword: np })
+          });
+          if (r?.ok) toast("Пароль обновлён");
+          else alert(r?.error || "Не удалось сменить пароль");
+        } catch (e) {
+          console.error(e);
+          alert("Ошибка смены пароля");
+        }
+      });
+    }
+
+    const btnLogout = $("#btn-logout");
+    if (btnLogout) {
+      btnLogout.addEventListener("click", () => {
+        setAuth(null);
+        toast("Вы вышли");
+        updateMeUI();
+      });
+    }
+    periodSel.value="today"; const now=new Date(); $("#from-date").value=toYMD(startOfWeek(now)); $("#to-date").value=toYMD(endOfWeek(now)); $("#lb-period").value="week"; $("#lb-from").value=toYMD(startOfWeek(now)); $("#lb-to").value=toYMD(endOfWeek(now)); updateMeUI(); await refreshAll(); show("dashboard"); if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{});} }catch(err){ console.error(err); alert("Ошибка инициализации: "+err.message); } })();
 })();

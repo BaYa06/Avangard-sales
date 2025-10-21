@@ -259,6 +259,31 @@
         </div>
       </div>
     </section>
+
+    <!-- ME (Личный кабинет) -->
+    <section class="screen" id="screen-me">
+      <div class="card" id="me-unauth">
+        <div class="card-title">Войти</div>
+        <form id="login-form" class="form">
+          <select id="login-manager" required></select>
+          <input type="password" id="login-pass" placeholder="Пароль" required>
+          <button class="btn" type="submit">Войти</button>
+        </form>
+        <p class="mini">Подсказка: если пароль ещё не установлен для менеджера, вход с пустым паролем доступен и его можно задать ниже.</p>
+      </div>
+
+      <div class="card hidden" id="me-auth">
+        <div class="card-title">Личный кабинет</div>
+        <div class="row">
+          <div id="me-name" class="big"></div>
+        </div>
+        <div class="row">
+          <button class="btn" id="btn-change-pass">Сменить пароль</button>
+          <button class="btn danger" id="btn-logout">Выйти</button>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <button class="fab" id="fab-add" title="Добавить продажу">＋</button>
