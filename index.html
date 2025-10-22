@@ -97,6 +97,12 @@
         <div class="card-title">Лидер месяца</div>
         <div id="leader-month" class="leader-box">—</div>
       </div>
+      <div class="card chart-card">
+        <div class="card-title">Люди по дням (текущий месяц)</div>
+        <div class="chart-wrapper">
+          <canvas id="monthly-sales-chart" aria-label="Линейный график продаж за месяц" role="img"></canvas>
+        </div>
+      </div>
     </section>
 
     <!-- ADD -->
@@ -337,6 +343,7 @@
   <footer class="app-footer">
   </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

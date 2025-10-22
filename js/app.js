@@ -4,6 +4,7 @@
   const $$ = sel => Array.from(document.querySelectorAll(sel));
   const todayStr = () => new Date().toISOString().slice(0,10);
   const toYMD = (d) => d.toISOString().slice(0,10);
+  let monthlySalesChart = null;
   function startOfWeek(d){ const day=d.getDay(); const diff=(day===0?-6:1)-day; const res=new Date(d); res.setDate(d.getDate()+diff); return res; }
   function endOfWeek(d){ const s=startOfWeek(d); const res=new Date(s); res.setDate(s.getDate()+6); return res; }
   function startOfMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
@@ -114,6 +115,106 @@
     return ymd && ymd.includes("-") ? ymdToDmy(ymd) : s;
   }
 
+  function accentColor(alpha = 1){
+    const cssColor = getComputedStyle(document.documentElement).getPropertyValue("--accent")?.trim() || "#1c7ed6";
+    if(!cssColor.startsWith("#")) return alpha === 1 ? cssColor : `rgba(28, 126, 214, ${alpha})`;
+    let hex = cssColor.slice(1);
+    if(hex.length === 3) hex = hex.split("").map(ch=>ch+ch).join("");
+    const int = parseInt(hex, 16);
+    const r = (int >> 16) & 255;
+    const g = (int >> 8) & 255;
+    const b = int & 255;
+    return alpha === 1 ? `rgb(${r}, ${g}, ${b})` : `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
+  function updateMonthlySalesChart(rows, from, to){
+    const canvas = $("#monthly-sales-chart");
+    if(!canvas || typeof Chart === "undefined") return;
+
+    const totals = {};
+    rows.forEach(ev => {
+      const raw = ev?.date;
+      let ymd = "";
+      if(typeof raw === "string"){
+        ymd = raw.slice(0,10);
+      } else if(raw instanceof Date){
+        ymd = toYMD(raw);
+      } else if(raw){
+        try { ymd = toYMD(new Date(raw)); }
+        catch { ymd = ""; }
+      }
+      if(!ymd) return;
+      const count = Number(ev?.people ?? 0) || 0;
+      totals[ymd] = (totals[ymd] || 0) + Math.max(0, count);
+    });
+
+    const labels = [];
+    const data = [];
+    const parseYmd = (value) => {
+      const parts = (value || "").split("-").map(Number);
+      if(parts.length !== 3 || parts.some(n=>Number.isNaN(n))) return null;
+      return new Date(Date.UTC(parts[0], parts[1]-1, parts[2]));
+    };
+    const start = parseYmd(from);
+    const end = parseYmd(to);
+    if(!start || !end) return;
+    for(let d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)){
+      const dayKey = d.toISOString().slice(0,10);
+      labels.push(new Date(d).toLocaleDateString("ru-RU", { day: "2-digit", month: "short" }));
+      data.push(totals[dayKey] || 0);
+    }
+
+    const border = accentColor(1);
+    const background = accentColor(0.18);
+
+    if(!monthlySalesChart){
+      monthlySalesChart = new Chart(canvas.getContext("2d"), {
+        type: "line",
+        data: {
+          labels,
+          datasets: [{
+            label: "Люди",
+            data,
+            tension: 0.35,
+            borderColor: border,
+            backgroundColor: background,
+            borderWidth: 3,
+            pointRadius: 3,
+            pointHoverRadius: 5,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                precision: 0
+              }
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label(ctx){
+                  return `Людей: ${ctx.parsed.y}`;
+                }
+              }
+            }
+          }
+        }
+      });
+    } else {
+      monthlySalesChart.data.labels = labels;
+      monthlySalesChart.data.datasets[0].data = data;
+      monthlySalesChart.data.datasets[0].borderColor = border;
+      monthlySalesChart.data.datasets[0].backgroundColor = background;
+      monthlySalesChart.update();
+    }
+  }
 
   async function refreshEvents(){
     const [from,to]=calcRange(periodSel.value,fromInput,toInput);
@@ -201,6 +302,7 @@
     $("#kpi-today-people").textContent=sum(todayRows,x=>x.people||0);
     $("#kpi-week-people").textContent=sum(weekRows,x=>x.people||0);
     $("#kpi-month-people").textContent=sum(monthRows,x=>x.people||0);
+    updateMonthlySalesChart(monthRows, moFrom, moTo);
     const todayAgg=await aggregates(tdFrom,tdTo);
     const tb=$("#today-managers-table tbody"); tb.innerHTML="";
     todayAgg.forEach(r=>{ const tr=document.createElement("tr"); tr.innerHTML=`<td>${escapeHtml(r.managerName)}</td><td>${r.sales}</td><td>${r.people}</td>`; tb.appendChild(tr); });
