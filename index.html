@@ -285,6 +285,39 @@
         <div class="row">
           <div id="me-name" class="big"></div>
         </div>
+
+        <!-- Валюта + курс -->
+        <div class="row" id="me-currency-row">
+          <div class="btn-group" role="group" aria-label="Выбор валюты">
+            <button class="btn" id="cur-kgs" data-cur="KGS">сом (KGS)</button>
+            <button class="btn" id="cur-kzt" data-cur="KZT">тенге (KZT)</button>
+            <span id="rate-badge" class="mini" style="margin-left:8px;"></span>
+          </div>
+        </div>
+
+        <!-- KPI -->
+        <div class="card" id="me-kpis">
+          <div class="card-title">Мои показатели (за всё время)</div>
+          <div class="kpi-grid">
+            <div class="card kpi">
+              <div class="kpi-label">Записал людей</div>
+              <div class="kpi-value" id="me-kpi-people">—</div>
+            </div>
+            <div class="card kpi">
+              <div class="kpi-label">Продаж</div>
+              <div class="kpi-value" id="me-kpi-sales">—</div>
+            </div>
+            <div class="card kpi">
+              <div class="kpi-label">Сумма (итого)</div>
+              <div class="kpi-value" id="me-kpi-total">—</div>
+            </div>
+            <div class="card kpi">
+              <div class="kpi-label">ЗП 3%</div>
+              <div class="kpi-value" id="me-kpi-salary">—</div>
+            </div>
+          </div>
+        </div>
+
         <div class="row">
           <button class="btn" id="btn-change-pass">Сменить пароль</button>
           <button class="btn danger" id="btn-logout">Выйти</button>

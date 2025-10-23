@@ -330,7 +330,16 @@
     else localStorage.removeItem("auth");
   }
   function toast(msg){ const d=document.createElement("div"); d.textContent=msg; d.style.position="fixed"; d.style.bottom="90px"; d.style.right="18px"; d.style.background="#0b132b"; d.style.color="#fff"; d.style.padding="10px 14px"; d.style.borderRadius="12px"; d.style.boxShadow="0 8px 24px rgba(2,8,23,.06)"; document.body.appendChild(d); setTimeout(()=>d.remove(),1800); }
-  async function refreshAll(){ await refreshDashboard(); await refreshEvents(); await renderLeaderboard(); }
+  async function refreshAll(){
+    await refreshDashboard();
+    await refreshEvents();
+    await renderLeaderboard();
+    if (typeof loadMeStats === 'function') {
+      await loadMeStats();
+    }
+  }
+
+
   function openEditModal(row){
     // Преобразуем дату к dd.mm.yyyy
     const ymd = typeof row.date === "string" ? row.date.slice(0,10) : "";
@@ -459,4 +468,110 @@
       });
     }
     periodSel.value="today"; const now=new Date(); $("#from-date").value=toYMD(startOfWeek(now)); $("#to-date").value=toYMD(endOfWeek(now)); $("#lb-period").value="week"; $("#lb-from").value=toYMD(startOfWeek(now)); $("#lb-to").value=toYMD(endOfWeek(now)); updateMeUI(); await refreshAll(); show("dashboard"); if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{});} }catch(err){ console.error(err); alert("Ошибка инициализации: "+err.message); } })();
+
+    // ==== Currency & ME stats ====
+    const PREF_CUR_KEY = "prefCurrency";
+    let currentCurrency = localStorage.getItem(PREF_CUR_KEY) || "KGS";
+    let rateCache = { kgs_to_kzt: null, kzt_to_kgs: null, updated: null };
+
+    function fmtMoney(n, cur){
+      const val = Number(n || 0);
+      const code = cur === "KZT" ? "KZT" : "KGS";
+      const symbol = code === "KZT" ? "₸" : "сом";
+      return `${val.toLocaleString('ru-RU', { maximumFractionDigits: 2 })} ${symbol}`;
+    }
+
+    async function fetchRate(){
+      try{
+        const r = await api('/api/rates');
+        if(r?.kgs_to_kzt){
+          rateCache = r;
+          return r;
+        }
+      }catch(e){}
+      // fallback: если апи недоступно
+      if(!rateCache.kgs_to_kzt){
+        rateCache = { kgs_to_kzt: 5.0, kzt_to_kgs: 0.2, updated: null };
+      }
+      return rateCache;
+    }
+
+    function convertAmount(amount, from, to){
+      if(!amount) return 0;
+      from = (from||'KGS').toUpperCase();
+      to   = (to||'KGS').toUpperCase();
+      if(from === to) return Number(amount);
+      if(!rateCache.kgs_to_kzt) return Number(amount);
+      if(from === 'KGS' && to === 'KZT') return Number(amount) * rateCache.kgs_to_kzt;
+      if(from === 'KZT' && to === 'KGS') return Number(amount) * rateCache.kzt_to_kgs;
+      return Number(amount);
+    }
+
+    async function loadMeStats(){
+      const a = getAuth?.();
+      if(!a || !a.managerId) return;
+
+      const [stats, rate] = await Promise.all([
+        api(`/api/stats?managerId=${encodeURIComponent(a.managerId)}`),
+        fetchRate()
+      ]);
+
+      const totals = stats?.totals || { people: 0, sales: 0, amounts: {KGS:0, KZT:0} };
+      const people = totals.people || 0;
+      const sales  = totals.sales  || 0;
+
+      const totalInCur =
+        convertAmount(totals.amounts?.KGS || 0, 'KGS', currentCurrency) +
+        convertAmount(totals.amounts?.KZT || 0, 'KZT', currentCurrency);
+
+      const salary = totalInCur * 0.03;
+
+      const elPeople = $('#me-kpi-people');
+      const elSales  = $('#me-kpi-sales');
+      const elTotal  = $('#me-kpi-total');
+      const elSalary = $('#me-kpi-salary');
+      const rateBadge= $('#rate-badge');
+
+      if(elPeople) elPeople.textContent = String(people);
+      if(elSales)  elSales.textContent  = String(sales);
+      if(elTotal)  elTotal.textContent  = fmtMoney(totalInCur, currentCurrency);
+      if(elSalary) elSalary.textContent = fmtMoney(salary, currentCurrency);
+      if(rateBadge && rate?.kgs_to_kzt){
+        rateBadge.textContent = `Курс: 1 KGS ≈ ${rate.kgs_to_kzt.toFixed(3)} KZT`;
+      }
+
+      const btnKGS = $('#cur-kgs');
+      const btnKZT = $('#cur-kzt');
+      if(btnKGS && btnKZT){
+        btnKGS.classList.toggle('active', currentCurrency==='KGS');
+        btnKZT.classList.toggle('active', currentCurrency==='KZT');
+      }
+    }
+
+    // Переключение валют
+    document.addEventListener('click', (e)=>{
+      const btn = e.target.closest('#cur-kgs, #cur-kzt');
+      if(!btn) return;
+      const cur = btn.dataset.cur;
+      if(cur && cur !== currentCurrency){
+        currentCurrency = cur;
+        localStorage.setItem(PREF_CUR_KEY, currentCurrency);
+        loadMeStats();
+      }
+    });
+
+    // Открыли вкладку "me" — обновить KPI
+    const tabsEl = document.getElementById('tabs');
+    if(tabsEl){
+      tabsEl.addEventListener('click', (e)=>{
+        const b = e.target.closest('.tab');
+        if(!b) return;
+        if(b.dataset.tab === 'me'){
+          loadMeStats();
+        }
+      });
+    }
+
+    // Первичная загрузка
+    loadMeStats();
 })();
