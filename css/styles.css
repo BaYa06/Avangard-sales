@@ -471,8 +471,16 @@ select:focus {
     display: none;
   }
 
+  #fab-add {
+    margin-bottom: 60px;
+  }
+
   .name_man {
     width: 190px;
+  }
+
+  #dash-schedule {
+    margin-bottom: 50px;
   }
 
   .count_all {
