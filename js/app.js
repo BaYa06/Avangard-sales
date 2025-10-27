@@ -616,6 +616,7 @@
     await refreshDashboard();
     await refreshEvents();
     await renderLeaderboard();
+    await loadSchedulePreview();
     if (typeof loadMeStats === "function") {
       await loadMeStats();
     }
@@ -888,6 +889,228 @@
       }
     });
   }
+
+  // === Schedule (Weekly) ===
+  const SHIFT_OPTIONS = [
+    { code: 'OFF',   label: 'Выходной',    chip: 'off' },
+    { code: '9-17',  label: '09:00–17:00', chip: 's1' },
+    { code: '14-22', label: '14:00–22:00', chip: 's2' },
+    { code: '10-18', label: '10:00–18:00', chip: 's3' },
+    { code: '18-22', label: '18:00–22:00', chip: 's4' },
+  ];
+
+  function mondayOf(d){
+    const date = (d instanceof Date)? new Date(d) : new Date(d);
+    if (isNaN(date)) return new Date();
+    const day = date.getDay(); // 0..6
+    const diff = (day === 0 ? -6 : 1) - day;
+    const res = new Date(date);
+    res.setDate(date.getDate() + diff);
+    res.setHours(0,0,0,0);
+    return res;
+  }
+  function toYMD2(d){
+    const pad=n=>String(n).padStart(2,'0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  }
+
+  async function loadSchedule(){
+    const input = $('#sched-week');
+    if(!input) return;
+    const weekStr = input.value || toYMD2(new Date());
+    const res = await api(`/api/schedule?week=${encodeURIComponent(weekStr)}`);
+
+    const map = new Map(); // managerId -> {name, days:{1..7: shift}}
+    const items = res?.items || [];
+    items.forEach(it=>{
+      const id = String(it.manager_id);
+      if(!map.has(id)) map.set(id, { name: it.manager_name||'—', days: {} });
+      map.get(id).days[Number(it.day)] = String(it.shift);
+    });
+
+    const mgrRows = await api('/api/managers');
+    const tbody = $('#schedule-table tbody');
+    tbody.innerHTML = '';
+    const days = [1,2,3,4,5,6,7];
+
+    mgrRows.sort((a,b)=> (a.name||'').localeCompare(b.name||''));
+    mgrRows.forEach(mgr => {
+      const tr = document.createElement('tr');
+
+      const tdName = document.createElement('td');
+      tdName.textContent = mgr.name || '—';
+      tr.appendChild(tdName);
+
+      days.forEach(day => {
+        const td = document.createElement('td');
+        const cur = (map.get(String(mgr.id))?.days?.[day]) || 'OFF';
+        td.appendChild(renderShiftCell(mgr.id, day, cur));
+        tr.appendChild(td);
+      });
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  async function loadSchedulePreview(){
+    const table = $('#dash-schedule-table');
+    if (!table) return;
+
+    function mondayOf(d){
+      const date = (d instanceof Date)? new Date(d) : new Date(d);
+      const day = date.getDay(); const diff = (day === 0 ? -6 : 1) - day;
+      const res = new Date(date); res.setDate(date.getDate()+diff);
+      res.setHours(0,0,0,0); return res;
+    }
+    function toYMD2(d){
+      const pad=n=>String(n).padStart(2,'0');
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    }
+
+    const weekStr = toYMD2(mondayOf(new Date()));
+    const [sched, managers] = await Promise.all([
+      api(`/api/schedule?week=${encodeURIComponent(weekStr)}`),
+      api('/api/managers')
+    ]);
+
+    const items = sched?.items || [];
+    const map = new Map(); // managerId -> {name, days:{}}
+    items.forEach(it=>{
+      const id = String(it.manager_id);
+      if(!map.has(id)) map.set(id, { name: it.manager_name||'—', days: {} });
+      map.get(id).days[Number(it.day)] = String(it.shift);
+    });
+
+    const days = [1,2,3,4,5,6,7];
+    const tbody = table.querySelector('tbody');
+    tbody.innerHTML = '';
+
+    managers.sort((a,b)=> (a.name||'').localeCompare(b.name||''));
+    managers.forEach(mgr=>{
+      const tr = document.createElement('tr');
+      const tdN = document.createElement('td'); tdN.textContent = mgr.name || '—'; tr.appendChild(tdN);
+      days.forEach(d=>{
+        const td = document.createElement('td');
+        const code = map.get(String(mgr.id))?.days?.[d] || 'OFF';
+        const cfg = SHIFT_OPTIONS.find(o=>o.code === code);
+        const chip = document.createElement('span');
+        chip.className = 'chip ' + (cfg?.chip || 'off') + ' xs';
+        chip.textContent = (cfg?.label || '—').replace(':00','').replace(':00','').replace('–', '–'); // компакт
+        td.appendChild(chip);
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+  }
+
+
+  function renderShiftCell(managerId, day, shift){
+    const wrap = document.createElement('div');
+    wrap.className = 'cell-editor';
+
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'chip ' + (SHIFT_OPTIONS.find(o=>o.code===shift)?.chip || 'off');
+    chip.textContent = (SHIFT_OPTIONS.find(o=>o.code===shift)?.label || '—');
+    chip.addEventListener('click', ()=> openShiftPopover(chip, managerId, day, shift));
+    wrap.appendChild(chip);
+
+    return wrap;
+  }
+
+  let _shiftPopover = null; // текущий открыт поповер
+
+  function closeShiftPopover(){
+    if (_shiftPopover) {
+      _shiftPopover.remove();
+      _shiftPopover = null;
+      document.removeEventListener('keydown', escClose);
+      document.removeEventListener('click', outsideClose, true);
+    }
+  }
+  function escClose(e){ if (e.key === 'Escape') closeShiftPopover(); }
+  function outsideClose(e){
+    if (!_shiftPopover) return;
+    const content = _shiftPopover.querySelector('.shift-popover');
+    if (content && !content.contains(e.target)) {
+      closeShiftPopover();
+    }
+  }
+
+  function openShiftPopover(anchorEl, managerId, day, currentShift){
+    closeShiftPopover();
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'shift-popover-backdrop';
+    backdrop.innerHTML = `
+      <div class="shift-popover">
+        <div class="title">Выберите смену</div>
+        <div class="shift-grid" id="shift-grid"></div>
+        <div class="close-row"><button class="close" type="button">Закрыть</button></div>
+      </div>
+    `;
+
+    const grid = backdrop.querySelector('#shift-grid');
+    SHIFT_OPTIONS.forEach(op=>{
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `shift-btn ${op.chip}`;
+      btn.textContent = op.label;
+      btn.addEventListener('click', async ()=>{
+        // Сохраняем сразу
+        const wk = $('#sched-week')?.value || toYMD2(new Date());
+        await api('/api/schedule', { method: 'POST', body: JSON.stringify({
+          week: wk,
+          items: [{ manager_id: managerId, day: day, shift: op.code }]
+        })});
+        // Обновляем UI в ячейке
+        const cfg = SHIFT_OPTIONS.find(o=>o.code===op.code);
+        anchorEl.className = 'chip ' + (cfg?.chip || 'off');
+        anchorEl.textContent = cfg?.label || '—';
+        closeShiftPopover();
+      });
+      grid.appendChild(btn);
+    });
+
+    backdrop.querySelector('.close').addEventListener('click', closeShiftPopover);
+
+    document.body.appendChild(backdrop);
+    _shiftPopover = backdrop;
+    setTimeout(()=>{
+      document.addEventListener('keydown', escClose);
+      document.addEventListener('click', outsideClose, true);
+    }, 0);
+  }
+
+
+
+  // Инициализация контролов графика
+  (function initSchedule(){
+    const input = $('#sched-week');
+    if(!input) return;
+
+    // по умолчанию — понедельник текущей недели
+    const m = mondayOf(new Date());
+    input.value = toYMD2(m);
+
+    $('#sched-prev')?.addEventListener('click', ()=>{
+      const d = mondayOf(input.value);
+      d.setDate(d.getDate()-7);
+      input.value = toYMD2(d);
+      loadSchedule();
+    });
+    $('#sched-next')?.addEventListener('click', ()=>{
+      const d = mondayOf(input.value);
+      d.setDate(d.getDate()+7);
+      input.value = toYMD2(d);
+      loadSchedule();
+    });
+    input.addEventListener('change', loadSchedule);
+
+    // первая загрузка
+    setTimeout(loadSchedule, 0);
+  })();
+
 
   // Первичная загрузка
   loadMeStats();

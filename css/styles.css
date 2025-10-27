@@ -376,7 +376,89 @@ select:focus {
 .btn-group { display: inline-flex; gap: 6px; align-items: center; }
 
 
+/* === Schedule (Weekly) === */
+.schedule-controls { align-items: center; gap: 12px; flex-wrap: wrap; }
+.schedule-controls .legend { display: inline-flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+
+.schedule-wrap { overflow: auto; border-radius: var(--radius); border: 1px solid rgba(0,0,0,0.06); }
+.schedule-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+.schedule-table th, .schedule-table td { padding: 10px; border-bottom: 1px solid rgba(0,0,0,0.06); text-align: center; }
+.schedule-table thead th { position: sticky; top: 0; background: var(--card); z-index: 1; font-size: 13px; color: var(--muted); }
+.schedule-table td:first-child, .schedule-table th:first-child { text-align: left; }
+
+.chip { display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 8px 10px; border-radius: 10px; font-weight: 700; font-size: 13px; user-select: none; }
+.chip.off { background: #ffd6d9; color: #a61e4d; }   /* выходной (красный) */
+.chip.s1  { background: #1c7ed6; color: #fff; }      /* 09-17 */
+.chip.s2  { background: #5f3dc4; color: #fff; }      /* 14-22 */
+.chip.s3  { background: #0ca678; color: #fff; }      /* 10-18 */
+.chip.s4  { background: #7048e8; color: #fff; }      /* 18-22 */
+
+.cell-editor { display: inline-flex; align-items: center; gap: 6px; }
+.cell-editor select { padding: 6px 8px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.1); background: #fff; }
+.cell-editor .chip { cursor: pointer; }
+
+/* === Schedule (Weekly) — UI обновления === */
+
+/* Chips (есть базовые, добавим размер XS и hover) */
+.chip.xs { padding: 4px 6px; border-radius: 8px; font-size: 11px; font-weight: 700; }
+.chip:hover { filter: brightness(0.95); }
+
+/* Schedule wrap/table (компакт для дашборда) */
+.schedule-wrap.compact { border-radius: 12px; border: 1px solid rgba(0,0,0,0.06); overflow: auto; }
+.schedule-table.compact th, .schedule-table.compact td { padding: 6px 8px; }
+.schedule-table.compact .chip.xs { font-weight: 800; }
+
+/* Поповер выбора смены */
+.shift-popover-backdrop {
+  position: fixed; inset: 0; background: rgba(10,10,20,0.25);
+  backdrop-filter: blur(2px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 999;
+}
+.shift-popover {
+  background: var(--card); color: var(--foreground);
+  border-radius: 14px; box-shadow: var(--shadow);
+  padding: 12px; width: min(320px, 92vw);
+  border: 1px solid rgba(0,0,0,0.06);
+}
+.shift-popover .title { font-size: 14px; color: var(--muted); margin-bottom: 8px; text-align:center; }
+.shift-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.shift-btn {
+  display:flex; align-items:center; justify-content:center;
+  border-radius: 10px; padding: 10px 12px; font-weight: 800; font-size: 14px;
+  color:#fff; cursor:pointer; border:none;
+  transition: transform .08s ease, filter .08s ease;
+}
+.shift-btn:hover { filter: brightness(0.95); transform: translateY(-1px); }
+.shift-btn.off { background: #e03131; }
+.shift-btn.s1  { background: #1c7ed6; }
+.shift-btn.s2  { background: #5f3dc4; }
+.shift-btn.s3  { background: #0ca678; }
+.shift-btn.s4  { background: #7048e8; }
+
+/* Кнопка закрыть (иконку можно добавить позже при желании) */
+.shift-popover .close-row { margin-top:10px; display:flex; justify-content:center; }
+.shift-popover .close { background: transparent; border: 1px solid rgba(0,0,0,0.12); border-radius: 999px; padding: 6px 12px; font-size: 12px; cursor:pointer; }
+
+.btn{
+  margin-bottom: 10px;
+}
+
+#sched-week {
+  margin-bottom: 10px;
+}
+
+.legend {
+  margin: 10px;
+}
+
+
 @media screen and (max-width: 768px) {
+
+  .schedule-table th, .schedule-table td { padding: 8px; }
+  .chip { padding: 6px 8px; font-size: 12px; }
+
   .brand-logo {
     display: none;
   }

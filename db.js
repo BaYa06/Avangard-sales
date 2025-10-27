@@ -22,6 +22,17 @@ export async function ensureSchema() {
     created_at TIMESTAMPTZ DEFAULT now()
   )`;
 
+  await sql`CREATE TABLE IF NOT EXISTS schedule_items (
+    id UUID PRIMARY KEY,
+    manager_id UUID REFERENCES managers(id) ON DELETE CASCADE,
+    week_start DATE NOT NULL,
+    day INT NOT NULL,          -- 1=Пн ... 7=Вс
+    shift TEXT NOT NULL,       -- OFF, 9-17, 14-22, 10-18, 18-22
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    UNIQUE(manager_id, week_start, day)
+  )`;
+
   await sql`CREATE INDEX IF NOT EXISTS idx_events_date ON events(date)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_events_manager ON events(manager_id)`;
 }

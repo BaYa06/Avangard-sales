@@ -37,6 +37,9 @@
       <button class="tab" data-tab="events" aria-label="События" title="События">
         <i class="fa-regular fa-calendar-days fa-lg fa-fw"></i>
       </button>
+      <button class="tab" data-tab="schedule" aria-label="График" title="График">
+        <i class="fa-regular fa-calendar-check fa-lg fa-fw"></i>
+      </button>
       <button class="tab" data-tab="leaderboard" aria-label="Лидерборд" title="Лидерборд">
         <i class="fa-solid fa-trophy fa-lg fa-fw"></i>
       </button>
@@ -101,6 +104,28 @@
         <div class="card-title">Люди по дням (текущий месяц)</div>
         <div class="chart-wrapper">
           <canvas id="monthly-sales-chart" aria-label="Линейный график продаж за месяц" role="img"></canvas>
+        </div>
+      </div>
+      <!-- DASH: WEEK SCHEDULE PREVIEW (read-only) -->
+      <div class="card" id="dash-schedule">
+        <div class="card-title">График на эту неделю (превью)</div>
+        <div class="row mini legend">
+          <span class="chip off xs">Вых</span>
+          <span class="chip s1 xs">09–17</span>
+          <span class="chip s2 xs">14–22</span>
+          <span class="chip s3 xs">10–18</span>
+          <span class="chip s4 xs">18–22</span>
+        </div>
+        <div class="schedule-wrap compact">
+          <table class="schedule-table compact" id="dash-schedule-table">
+            <thead>
+              <tr>
+                <th>Менеджер</th>
+                <th>Пн</th><th>Вт</th><th>Ср</th><th>Чт</th><th>Пт</th><th>Сб</th><th>Вс</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
         </div>
       </div>
     </section>
@@ -196,6 +221,39 @@
           </table>
         </div>
         <div class="totals" id="events-totals">Итого: 0 продаж, 0 людей</div>
+      </div>
+    </section>
+
+    <!-- SCHEDULE -->
+    <section class="screen" id="screen-schedule">
+      <div class="card">
+        <div class="card-title">График работы (неделя)</div>
+
+        <div class="row schedule-controls">
+          <button class="btn" id="sched-prev">&#171; Неделя назад</button>
+          <button class="btn" id="sched-next">Следующая неделя &#187;</button>
+          <input type="date" id="sched-week" />
+
+          <div class="legend">
+            <span class="chip off">Выходной</span>
+            <span class="chip s1">09:00–17:00</span>
+            <span class="chip s2">14:00–22:00</span>
+            <span class="chip s3">10:00–18:00</span>
+            <span class="chip s4">18:00–22:00</span>
+          </div>
+        </div>
+
+        <div class="schedule-wrap">
+          <table class="schedule-table" id="schedule-table">
+            <thead>
+              <tr>
+                <th>Менеджер</th>
+                <th>Пн</th><th>Вт</th><th>Ср</th><th>Чт</th><th>Пт</th><th>Сб</th><th>Вс</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </div>
     </section>
 
