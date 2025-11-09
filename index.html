@@ -381,6 +381,32 @@
           <button class="btn danger" id="btn-logout">Выйти</button>
         </div>
       </div>
+      <!-- Админ-панель: видна только при privileges=1 -->
+      <div class="card" id="admin-panel" style="display:none">
+        <div class="card-title">Отчёт по менеджерам</div>
+
+        <div class="filters">
+          <input type="date" id="admin-from">
+          <span>—</span>
+          <input type="date" id="admin-to">
+          <button class="btn" id="admin-refresh">Показать</button>
+        </div>
+
+        <div class="table-wrapper">
+          <table class="table" id="admin-managers-table">
+            <thead>
+              <tr>
+                <th>Имя</th>
+                <th>Люди</th>
+                <th>Продажи</th>
+                <th>Сумма</th>
+                <th>ЗП (3%)</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
     </section>
 
     <!-- EDIT SALE MODAL -->

@@ -24,9 +24,15 @@ export default async function handler(req, res) {
       const b = parseBody(req);
       const name = String(b.name || '').trim();
       const target = Number(b.target || 0);
+      const privileges = Number(b.privileges || 0); // ✅ новое
       if (!name) return res.status(400).json({ error: 'name required' });
 
-      await db.managers.insert({ id: b.id || randomUUID(), name, target });
+      await db.managers.insert({
+        id: b.id || randomUUID(),
+        name,
+        target,
+        privileges, // ✅ новое
+      });
       return res.status(201).json({ ok: true });
     }
 

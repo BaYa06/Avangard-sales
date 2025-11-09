@@ -471,33 +471,39 @@
       box.appendChild(card);
     });
   }
+
   function updateMeUI() {
-    const a = getAuth();
-    const una = $("#me-unauth"),
-      au = $("#me-auth");
-    if (!una || !au) return; // если секции нет — выходим
+    const a = getAuth?.();
+    const una = $("#me-unauth");
+    const au  = $("#me-auth");
+
+    const adminPanel = document.querySelector('#admin-panel'); // ✅
 
     if (a) {
-      // Показ "вошёл"
       una.classList.add("hidden");
       au.classList.remove("hidden");
+
       const name = managersById?.[String(a.managerId)]?.name || a.name || "—";
       $("#me-name").textContent = `Вы вошли как: ${name}`;
-      // (опционально) фиксируем менеджера при добавлении
+
+      if (adminPanel) {
+        // Всегда проверяем по БД, а не по localStorage
+        updateAdminPanelVisibility().catch(console.error);
+      }
+
+
       if ($("#add-manager")) {
         $("#add-manager").value = a.managerId;
-        $("#add-manager").disabled = true; // можно убрать, если хочется менять вручную
+        $("#add-manager").disabled = true;
       }
     } else {
-      // Показ "не вошёл"
       au.classList.add("hidden");
       una.classList.remove("hidden");
-      $("#me-name").textContent = "";
-      if ($("#add-manager")) {
-        $("#add-manager").disabled = false;
-      }
+      if ($("#add-manager")) $("#add-manager").disabled = false;
+      if (adminPanel) adminPanel.style.display = 'none';
     }
   }
+
 
   async function refreshDashboard() {
     const now = new Date();
@@ -594,6 +600,23 @@
       return null;
     }
   }
+
+  async function fetchCurrentPrivileges() {
+    const a = getAuth?.();
+    if (!a?.managerId) return 0;
+    try {
+      const managers = await api('/api/managers');      // идём в БД
+      const me = (Array.isArray(managers) ? managers : []).find(
+        m => String(m.id) === String(a.managerId)
+      );
+      const p = Number(me?.privileges ?? 0);
+      return Number.isFinite(p) ? p : 0;
+    } catch (e) {
+      console.error('fetchCurrentPrivileges error:', e);
+      return 0;
+    }
+  }
+
   function setAuth(obj) {
     if (obj) localStorage.setItem("auth", JSON.stringify(obj));
     else localStorage.removeItem("auth");
@@ -714,10 +737,11 @@
               body: JSON.stringify({ managerId, password }),
             });
             if (resp?.ok) {
-              setAuth({ managerId, name: resp.name });
+              setAuth({ managerId, name: resp.name, privileges: Number(resp.privileges || 0) }); // ✅
               $("#login-pass").value = "";
               toast("Вход выполнен");
               updateMeUI();
+              await updateAdminPanelVisibility();
             } else {
               alert(resp?.error || "Неверные данные");
             }
@@ -866,6 +890,139 @@
     }
   }
 
+  // === Admin panel (privileges = 1) ===
+  function setAdminDefaultRange() {
+    const now = new Date();
+    const from = new Date(now.getFullYear(), now.getMonth(), 1);
+    const to   = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const f = document.querySelector('#admin-from');
+    const t = document.querySelector('#admin-to');
+    if (f) f.value = toYMD(from);
+    if (t) t.value = toYMD(to);
+  }
+
+  async function updateAdminPanelVisibility() {
+    const panel = document.querySelector('#admin-panel');
+    if (!panel) return;
+
+    const p = await fetchCurrentPrivileges(); // 0 или 1 из БД
+    if (p === 1) {
+      panel.classList.remove('hidden');
+      panel.style.display = '';
+      setAdminDefaultRange();
+      await loadAdminStats().catch(console.error);
+    } else {
+      panel.classList.add('hidden');
+      panel.style.display = 'none';
+    }
+  }
+
+
+  // === ЗАМЕНИ ЭТУ ФУНКЦИЮ ПОЛНОСТЬЮ ===
+  function renderAdminManagersTable(rows) {
+    const tb = document.querySelector('#admin-managers-table tbody');
+    if (!tb) return;
+    tb.innerHTML = '';
+
+    rows.forEach(r => {
+      const amount = Number(r.amount || 0);            // уже сконвертировано в currentCurrency
+      const salary = amount * 0.03;                    // ЗП 3%
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${escapeHtml(r.managerName || '—')}</td>
+        <td>${Number(r.people || 0)}</td>
+        <td>${Number(r.sales || 0)}</td>
+        <td>${fmtMoney(amount, currentCurrency)}</td>
+        <td>${fmtMoney(salary, currentCurrency)}</td>
+      `;
+      tb.appendChild(tr);
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.querySelector('#admin-refresh');
+    if (btn) btn.addEventListener('click', () => loadAdminStats().catch(console.error));
+  });
+
+
+  // === ЗАМЕНИ ЭТУ ФУНКЦИЮ ПОЛНОСТЬЮ ===
+  async function loadAdminStats() {
+    const p = await fetchCurrentPrivileges();
+    if (p !== 1) return; // без прав ничего не грузим
+
+    const f = document.querySelector('#admin-from')?.value || '2000-01-01';
+    const t = document.querySelector('#admin-to')?.value   || '2100-01-01';
+
+    // 1) Берём события за период + курс (как делает личная панель)
+    const [events] = await Promise.all([
+      api(`/api/events?from=${encodeURIComponent(f)}&to=${encodeURIComponent(t)}`),
+      fetchRate() // прогреем rateCache; результат не используется напрямую
+    ]);
+
+    // 2) Группируем по менеджерам и суммируем отдельно KGS / KZT
+    const map = new Map(); // id -> { managerId, managerName, sales, people, amounts:{KGS,KZT} }
+
+    const getMgrName = (id) => managersById?.[String(id)]?.name || '—';
+
+    (events || []).forEach(ev => {
+      const mgrId = String(
+        ev.managerId ?? ev.manager_id ?? ev.manager ?? ev.mgrId ?? ev.mgr_id ?? ''
+      );
+      if (!mgrId) return;
+
+      if (!map.has(mgrId)) {
+        map.set(mgrId, {
+          managerId: mgrId,
+          managerName: getMgrName(mgrId),
+          sales: 0,
+          people: 0,
+          amounts: { KGS: 0, KZT: 0 }
+        });
+      }
+      const agg = map.get(mgrId);
+      agg.sales  += Number(ev.salesCount || 1);
+      agg.people += Number(ev.people || 0);
+
+      const cur = String(ev.currency || 'KGS').toUpperCase();
+      const amt = Number(ev.amount || 0);
+      if (cur === 'KZT') agg.amounts.KZT += amt;
+      else               agg.amounts.KGS += amt; // всё остальное считаем KGS
+    });
+
+    // 3) Добавим менеджеров без событий (чтобы никого не "потерять")
+    Object.keys(managersById || {}).forEach(id => {
+      if (!map.has(String(id))) {
+        map.set(String(id), {
+          managerId: String(id),
+          managerName: getMgrName(id),
+          sales: 0,
+          people: 0,
+          amounts: { KGS: 0, KZT: 0 }
+        });
+      }
+    });
+
+    // 4) Собираем строки: конвертация по той же формуле, что и в «ME»
+    const rows = Array.from(map.values())
+      .sort((a, b) => (a.managerName || '').localeCompare(b.managerName || ''))
+      .map(agg => {
+        const totalInCur =
+          convertAmount(agg.amounts.KGS, 'KGS', currentCurrency) +
+          convertAmount(agg.amounts.KZT, 'KZT', currentCurrency);
+
+        return {
+          managerId:   agg.managerId,
+          managerName: agg.managerName,
+          sales:       agg.sales,
+          people:      agg.people,
+          amount:      Number(totalInCur || 0) // передаём в renderAdminManagersTable()
+        };
+      });
+
+    renderAdminManagersTable(rows);
+  }
+
+
   // Переключение валют
   document.addEventListener("click", (e) => {
     const btn = e.target.closest("#cur-kgs, #cur-kzt");
@@ -875,6 +1032,7 @@
       currentCurrency = cur;
       localStorage.setItem(PREF_CUR_KEY, currentCurrency);
       loadMeStats();
+      loadAdminStats(); // ← добавили, чтобы таблица админа пересчитывалась в той же валюте
     }
   });
 

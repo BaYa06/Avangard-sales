@@ -40,7 +40,10 @@ export async function ensureSchema() {
 export const db = {
   managers: {
     list: () => sql`SELECT * FROM managers ORDER BY created_at DESC`,
-    insert: (m) => sql`INSERT INTO managers (id,name,target) VALUES (${m.id}, ${m.name}, ${m.target})`,
+    insert: (m) => sql`
+      INSERT INTO managers (id, name, target, privileges)
+      VALUES (${m.id}, ${m.name}, ${m.target}, ${m.privileges ?? 0})
+    `,
     delete: (id) => sql`DELETE FROM managers WHERE id = ${id}`
   },
   events: {
