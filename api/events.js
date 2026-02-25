@@ -1,6 +1,6 @@
 // /api/events -> GET, POST, DELETE
 
-import { db, ensureSchema } from '../db.js';
+import { db, ensureSchema } from '../lib/db.js';
 import { randomUUID } from 'node:crypto';
 import { sql } from '@vercel/postgres'; // ← добавь эту строку
 

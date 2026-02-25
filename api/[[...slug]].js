@@ -1,6 +1,6 @@
 // api/[[...slug]].js — один серверлес-хендлер для /api/rates, /api/stats, /api/schedule
 import { sql } from '@vercel/postgres';
-import { ensureSchema } from '../db.js';
+import { ensureSchema } from '../lib/db.js';
 import { randomUUID } from 'node:crypto';
 
 // --- utils ---

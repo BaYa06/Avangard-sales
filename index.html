@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>Sales Board — Server (No native)</title>
   <link rel="manifest" href="manifest.json">
-  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16x16.png">
   <link rel="apple-touch-icon">
   <meta name="theme-color" content="#000000">
   <meta name="description" content="Приложение для просмотра расписания">
@@ -17,7 +17,6 @@
   <meta name="apple-mobile-web-app-title" content="Расписание">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <meta name="theme-color" content="#0b132b">
-  <link rel="apple-touch-icon" href="assets/icon.png">
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/css/all.min.css">
 </head>
@@ -55,6 +54,10 @@
   <main class="container">
     <!-- DASHBOARD -->
     <section class="screen shown" id="screen-dashboard">
+      <div class="greeting-block" id="greeting-block">
+        <div class="greeting-name" id="greeting-name"></div>
+        <div class="greeting-date" id="greeting-date"></div>
+      </div>
       <div class="kpi-grid">
         <div class="card kpi">
           <div class="kpi-label">Сегодня — продажи</div>
@@ -355,7 +358,11 @@
 
         <!-- KPI -->
         <div class="card" id="me-kpis">
-          <div class="card-title">Мои показатели (за всё время)</div>
+          <div class="month-nav">
+            <button class="month-nav-btn" id="me-month-prev"><i class="fa-solid fa-chevron-left"></i></button>
+            <span class="month-nav-label" id="me-month-label"></span>
+            <button class="month-nav-btn" id="me-month-next"><i class="fa-solid fa-chevron-right"></i></button>
+          </div>
           <div class="kpi-grid">
             <div class="card kpi">
               <div class="kpi-label">Записал людей</div>

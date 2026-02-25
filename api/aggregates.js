@@ -2,7 +2,7 @@
 // По умолчанию ВОЗВРАЩАЕМ МАССИВ (для совместимости с app.js)
 // Если нужен полный объект — добавь ?format=full
 import { sql } from '@vercel/postgres';
-import { ensureSchema } from '../db.js';
+import { ensureSchema } from '../lib/db.js';
 
 export default async function handler(req, res) {
   try {

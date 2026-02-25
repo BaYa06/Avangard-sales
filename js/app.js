@@ -505,31 +505,46 @@
   }
 
 
+  function updateGreeting() {
+    const auth = getAuth();
+    const nameEl = $("#greeting-name");
+    const dateEl = $("#greeting-date");
+    if (nameEl) {
+      nameEl.textContent = auth?.name ? `Привет, ${auth.name}!` : "Привет!";
+    }
+    if (dateEl) {
+      const now = new Date();
+      const months = ["январь","февраль","март","апрель","май","июнь",
+        "июль","август","сентябрь","октябрь","ноябрь","декабрь"];
+      dateEl.textContent = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+    }
+  }
+
   async function refreshDashboard() {
+    updateGreeting();
     const now = new Date();
     const [tdFrom, tdTo] = [toYMD(now), toYMD(now)];
     const [wkFrom, wkTo] = [toYMD(startOfWeek(now)), toYMD(endOfWeek(now))];
     const [moFrom, moTo] = [toYMD(startOfMonth(now)), toYMD(endOfMonth(now))];
-    const todayRows = await api(`/api/events?from=${tdFrom}&to=${tdTo}`);
-    const weekRows = await api(`/api/events?from=${wkFrom}&to=${wkTo}`);
-    const monthRows = await api(`/api/events?from=${moFrom}&to=${moTo}`);
+    const [todayRows, weekRows, monthRows, todayAgg, weekAgg, monthAgg] = await Promise.all([
+      api(`/api/events?from=${tdFrom}&to=${tdTo}`),
+      api(`/api/events?from=${wkFrom}&to=${wkTo}`),
+      api(`/api/events?from=${moFrom}&to=${moTo}`),
+      aggregates(tdFrom, tdTo),
+      aggregates(wkFrom, wkTo),
+      aggregates(moFrom, moTo),
+    ]);
     const sum = (arr, fn) => arr.reduce((a, c) => a + fn(c), 0);
-    $("#kpi-today-sales").textContent = sum(
-      todayRows,
-      (x) => x.salesCount || 1
-    );
+    $("#kpi-today-sales").textContent = sum(todayRows, (x) => x.salesCount || 1);
     $("#kpi-today-people").textContent = sum(todayRows, (x) => x.people || 0);
     $("#kpi-week-people").textContent = sum(weekRows, (x) => x.people || 0);
     $("#kpi-month-people").textContent = sum(monthRows, (x) => x.people || 0);
     updateMonthlySalesChart(monthRows, moFrom, moTo);
-    const todayAgg = await aggregates(tdFrom, tdTo);
     const tb = $("#today-managers-table tbody");
     tb.innerHTML = "";
     todayAgg.forEach((r) => {
       const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${escapeHtml(r.managerName)}</td><td>${
-        r.sales
-      }</td><td>${r.people}</td>`;
+      tr.innerHTML = `<td>${escapeHtml(r.managerName)}</td><td>${r.sales}</td><td>${r.people}</td>`;
       tb.appendChild(tr);
     });
     const leaderTxt = (rows) =>
@@ -537,9 +552,7 @@
         ? `${rows[0].managerName}: люди ${rows[0].people}, продаж ${rows[0].sales}`
         : "—";
     $("#leader-today").textContent = leaderTxt(todayAgg);
-    const weekAgg = await aggregates(wkFrom, wkTo);
     $("#leader-week").textContent = leaderTxt(weekAgg);
-    const monthAgg = await aggregates(moFrom, moTo);
     $("#leader-month").textContent = leaderTxt(monthAgg);
   }
   $("#btn-backup").addEventListener("click", async () => {
@@ -636,13 +649,13 @@
     setTimeout(() => d.remove(), 1800);
   }
   async function refreshAll() {
-    await refreshDashboard();
-    await refreshEvents();
-    await renderLeaderboard();
-    await loadSchedulePreview();
-    if (typeof loadMeStats === "function") {
-      await loadMeStats();
-    }
+    await Promise.all([
+      refreshDashboard(),
+      refreshEvents(),
+      renderLeaderboard(),
+      loadSchedulePreview(),
+      loadMeStats(),
+    ]);
   }
 
   function openEditModal(row) {
@@ -741,6 +754,7 @@
               $("#login-pass").value = "";
               toast("Вход выполнен");
               updateMeUI();
+              updateGreeting();
               await updateAdminPanelVisibility();
             } else {
               alert(resp?.error || "Неверные данные");
@@ -782,8 +796,19 @@
           setAuth(null);
           toast("Вы вышли");
           updateMeUI();
+          updateGreeting();
         });
       }
+      const btnMonthPrev = $("#me-month-prev");
+      const btnMonthNext = $("#me-month-next");
+      if (btnMonthPrev) btnMonthPrev.addEventListener("click", () => {
+        meStatsMonth.setMonth(meStatsMonth.getMonth() - 1);
+        loadMeStats();
+      });
+      if (btnMonthNext) btnMonthNext.addEventListener("click", () => {
+        meStatsMonth.setMonth(meStatsMonth.getMonth() + 1);
+        loadMeStats();
+      });
       periodSel.value = "today";
       const now = new Date();
       $("#from-date").value = toYMD(startOfWeek(now));
@@ -845,12 +870,35 @@
     return Number(amount);
   }
 
+  // --- Month navigation for salary ---
+  let meStatsMonth = new Date();
+  meStatsMonth.setDate(1);
+
+  function meMonthRange() {
+    const y = meStatsMonth.getFullYear();
+    const m = meStatsMonth.getMonth();
+    const from = toYMD(new Date(y, m, 1));
+    const to = toYMD(new Date(y, m + 1, 0));
+    return { from, to };
+  }
+
+  function updateMeMonthLabel() {
+    const el = $("#me-month-label");
+    if (!el) return;
+    const months = ["январь","февраль","март","апрель","май","июнь",
+      "июль","август","сентябрь","октябрь","ноябрь","декабрь"];
+    el.textContent = `${months[meStatsMonth.getMonth()]} ${meStatsMonth.getFullYear()}`;
+  }
+
   async function loadMeStats() {
     const a = getAuth?.();
     if (!a || !a.managerId) return;
 
+    updateMeMonthLabel();
+    const { from, to } = meMonthRange();
+
     const [stats, rate] = await Promise.all([
-      api(`/api/stats?managerId=${encodeURIComponent(a.managerId)}`),
+      api(`/api/stats?managerId=${encodeURIComponent(a.managerId)}&from=${from}&to=${to}`),
       fetchRate(),
     ]);
 

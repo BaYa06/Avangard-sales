@@ -1,5 +1,5 @@
 // /api/restore -> POST { managers:[], events:[] }
-import { ensureSchema } from '../db.js';
+import { ensureSchema } from '../lib/db.js';
 import { sql } from '@vercel/postgres';
 
 export default async function handler(req, res) {
