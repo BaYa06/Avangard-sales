@@ -494,12 +494,10 @@
 
       if ($("#add-manager")) {
         $("#add-manager").value = a.managerId;
-        $("#add-manager").disabled = true;
       }
     } else {
       au.classList.add("hidden");
       una.classList.remove("hidden");
-      if ($("#add-manager")) $("#add-manager").disabled = false;
       if (adminPanel) adminPanel.style.display = 'none';
     }
   }
