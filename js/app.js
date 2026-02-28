@@ -2,8 +2,13 @@
 (function () {
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
-  const todayStr = () => new Date().toISOString().slice(0, 10);
-  const toYMD = (d) => d.toISOString().slice(0, 10);
+  const todayStr = () => toYMD(new Date());
+  const toYMD = (d) => {
+    const yy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yy}-${mm}-${dd}`;
+  };
   let monthlySalesChart = null;
   function startOfWeek(d) {
     const day = d.getDay();
@@ -1096,11 +1101,11 @@
 
   // === Schedule (Weekly) ===
   const SHIFT_OPTIONS = [
-    { code: 'OFF',   label: 'Выходной',    chip: 'off' },
-    { code: '9-17',  label: '09:00–17:00', chip: 's1' },
-    { code: '14-22', label: '14:00–22:00', chip: 's2' },
-    { code: '10-18', label: '10:00–18:00', chip: 's3' },
-    { code: '18-22', label: '18:00–22:00', chip: 's4' },
+    { code: 'OFF',   label: 'Выходной',    chip: 'off',  dotColor: 'bg-red-500', bgClass: 'bg-red-500/10', borderClass: 'border border-red-500/20' },
+    { code: '11-20', label: '11:00–20:00', chip: 's1',   dotColor: 'bg-blue-500',  bgClass: 'bg-blue-500/10',  borderClass: 'border border-blue-500/20' },
+    { code: '10-19', label: '10:00–19:00', chip: 's2',   dotColor: 'bg-green-500', bgClass: 'bg-green-500/10', borderClass: 'border border-green-500/20' },
+    { code: '17-22', label: '17:00–22:00', chip: 's3',   dotColor: 'bg-amber-500',bgClass: 'bg-amber-500/10',borderClass: 'border border-amber-500/20' },
+    { code: '14-22', label: '14:00–22:00', chip: 's4',   dotColor: 'bg-purple-500',bgClass: 'bg-purple-500/10',borderClass: 'border border-purple-500/20' },
   ];
 
   function mondayOf(d){
@@ -1142,11 +1147,13 @@
       const tr = document.createElement('tr');
 
       const tdName = document.createElement('td');
+      tdName.className = 'p-4 sticky left-0 bg-white dark:bg-slate-800 border-r border-slate-100 dark:border-slate-700 font-semibold text-sm text-slate-700 dark:text-slate-300';
       tdName.textContent = mgr.name || '—';
       tr.appendChild(tdName);
 
       days.forEach(day => {
         const td = document.createElement('td');
+        td.className = 'p-2';
         const cur = (map.get(String(mgr.id))?.days?.[day]) || 'OFF';
         td.appendChild(renderShiftCell(mgr.id, day, cur));
         tr.appendChild(td);
@@ -1192,15 +1199,21 @@
     managers.sort((a,b)=> (a.name||'').localeCompare(b.name||''));
     managers.forEach(mgr=>{
       const tr = document.createElement('tr');
-      const tdN = document.createElement('td'); tdN.textContent = mgr.name || '—'; tr.appendChild(tdN);
+      const tdN = document.createElement('td');
+      tdN.className = 'p-3 sticky left-0 bg-white dark:bg-slate-800 border-r border-slate-100 dark:border-slate-700 font-semibold text-xs text-slate-700 dark:text-slate-300';
+      tdN.textContent = mgr.name || '—';
+      tr.appendChild(tdN);
       days.forEach(d=>{
         const td = document.createElement('td');
+        td.className = 'p-1.5';
         const code = map.get(String(mgr.id))?.days?.[d] || 'OFF';
-        const cfg = SHIFT_OPTIONS.find(o=>o.code === code);
-        const chip = document.createElement('span');
-        chip.className = 'chip ' + (cfg?.chip || 'off') + ' xs';
-        chip.textContent = (cfg?.label || '—').replace(':00','').replace(':00','').replace('–', '–'); // компакт
-        td.appendChild(chip);
+        const cfg = SHIFT_OPTIONS.find(o=>o.code === code) || SHIFT_OPTIONS[0];
+        const dot = document.createElement('div');
+        dot.className = `h-7 rounded-lg ${cfg.bgClass} ${cfg.borderClass} flex items-center justify-center`;
+        const inner = document.createElement('div');
+        inner.className = `size-1.5 rounded-full ${cfg.dotColor}`;
+        dot.appendChild(inner);
+        td.appendChild(dot);
         tr.appendChild(td);
       });
       tbody.appendChild(tr);
@@ -1209,20 +1222,25 @@
 
 
   function renderShiftCell(managerId, day, shift){
-    const wrap = document.createElement('div');
-    wrap.className = 'cell-editor';
+    const cfg = SHIFT_OPTIONS.find(o=>o.code===shift) || SHIFT_OPTIONS[0];
 
-    const chip = document.createElement('button');
-    chip.type = 'button';
-    chip.className = 'chip ' + (SHIFT_OPTIONS.find(o=>o.code===shift)?.chip || 'off');
-    chip.textContent = (SHIFT_OPTIONS.find(o=>o.code===shift)?.label || '—');
-    chip.addEventListener('click', ()=> openShiftPopover(chip, managerId, day, shift));
-    wrap.appendChild(chip);
+    const wrap = document.createElement('div');
+    wrap.className = `h-8 rounded-xl ${cfg.bgClass} ${cfg.borderClass} flex items-center justify-center cursor-pointer transition-transform hover:scale-105`;
+
+    const dot = document.createElement('div');
+    dot.className = `size-2 rounded-full ${cfg.dotColor}`;
+    wrap.appendChild(dot);
+
+    wrap.addEventListener('click', (e)=> {
+      e.stopPropagation();
+      openShiftPopover(wrap, managerId, day, shift);
+    });
 
     return wrap;
   }
 
-  let _shiftPopover = null; // текущий открыт поповер
+  let _shiftPopover = null;
+  let _shiftJustOpened = false;
 
   function closeShiftPopover(){
     if (_shiftPopover) {
@@ -1234,7 +1252,7 @@
   }
   function escClose(e){ if (e.key === 'Escape') closeShiftPopover(); }
   function outsideClose(e){
-    if (!_shiftPopover) return;
+    if (!_shiftPopover || _shiftJustOpened) return;
     const content = _shiftPopover.querySelector('.shift-popover');
     if (content && !content.contains(e.target)) {
       closeShiftPopover();
@@ -1246,11 +1264,14 @@
 
     const backdrop = document.createElement('div');
     backdrop.className = 'shift-popover-backdrop';
+    backdrop.style.cssText = 'position:fixed;inset:0;z-index:999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);backdrop-filter:blur(4px);';
     backdrop.innerHTML = `
-      <div class="shift-popover">
-        <div class="title">Выберите смену</div>
-        <div class="shift-grid" id="shift-grid"></div>
-        <div class="close-row"><button class="close" type="button">Закрыть</button></div>
+      <div class="shift-popover" style="background:#fff;border-radius:1.5rem;padding:1.5rem;min-width:280px;box-shadow:0 25px 50px rgba(0,0,0,0.15);">
+        <div style="font-weight:700;font-size:1rem;margin-bottom:1rem;text-align:center;color:#1e293b;">Выберите смену</div>
+        <div id="shift-grid" style="display:flex;flex-direction:column;gap:0.5rem;"></div>
+        <div style="margin-top:1rem;text-align:center;">
+          <button class="close" type="button" style="padding:0.5rem 1.5rem;border-radius:0.75rem;border:1px solid #e2e8f0;background:#f8fafc;color:#64748b;font-size:0.875rem;cursor:pointer;">Закрыть</button>
+        </div>
       </div>
     `;
 
@@ -1258,19 +1279,23 @@
     SHIFT_OPTIONS.forEach(op=>{
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = `shift-btn ${op.chip}`;
-      btn.textContent = op.label;
+      const colorMap = { off:'#ef4444', s1:'#3b82f6', s2:'#22c55e', s3:'#f59e0b', s4:'#a855f7' };
+      const bgMap   = { off:'rgba(239,68,68,0.1)', s1:'rgba(59,130,246,0.1)', s2:'rgba(34,197,94,0.1)', s3:'rgba(245,158,11,0.1)', s4:'rgba(168,85,247,0.1)' };
+      btn.style.cssText = `display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;border-radius:0.75rem;border:1px solid ${colorMap[op.chip]||'#e2e8f0'}30;background:${bgMap[op.chip]||'#f1f5f9'};cursor:pointer;width:100%;font-size:0.875rem;font-weight:500;color:#334155;transition:transform 0.1s;`;
+      btn.innerHTML = `<span style="width:8px;height:8px;border-radius:50%;background:${colorMap[op.chip]||'#94a3b8'};flex-shrink:0;"></span>${op.label}`;
       btn.addEventListener('click', async ()=>{
-        // Сохраняем сразу
         const wk = $('#sched-week')?.value || toYMD2(new Date());
         await api('/api/schedule', { method: 'POST', body: JSON.stringify({
           week: wk,
           items: [{ manager_id: managerId, day: day, shift: op.code }]
         })});
-        // Обновляем UI в ячейке
-        const cfg = SHIFT_OPTIONS.find(o=>o.code===op.code);
-        anchorEl.className = 'chip ' + (cfg?.chip || 'off');
-        anchorEl.textContent = cfg?.label || '—';
+        // Обновляем UI — перерисовываем ячейку
+        const cfg = SHIFT_OPTIONS.find(o=>o.code===op.code) || SHIFT_OPTIONS[0];
+        anchorEl.className = `h-8 rounded-xl ${cfg.bgClass} ${cfg.borderClass} flex items-center justify-center cursor-pointer transition-transform hover:scale-105`;
+        anchorEl.innerHTML = '';
+        const newDot = document.createElement('div');
+        newDot.className = `size-2 rounded-full ${cfg.dotColor}`;
+        anchorEl.appendChild(newDot);
         closeShiftPopover();
       });
       grid.appendChild(btn);
@@ -1280,10 +1305,12 @@
 
     document.body.appendChild(backdrop);
     _shiftPopover = backdrop;
+    _shiftJustOpened = true;
     setTimeout(()=>{
+      _shiftJustOpened = false;
       document.addEventListener('keydown', escClose);
       document.addEventListener('click', outsideClose, true);
-    }, 0);
+    }, 150);
   }
 
 

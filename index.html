@@ -19,6 +19,26 @@
   <meta name="theme-color" content="#0b132b">
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/css/all.min.css">
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#ec5b13",
+            "background-light": "#f8f6f6",
+            "background-dark": "#221610",
+          },
+          fontFamily: {
+            "display": ["Public Sans", "sans-serif"]
+          },
+        },
+      },
+    }
+  </script>
 </head>
 <body>
   <header class="app-header">
@@ -110,25 +130,51 @@
         </div>
       </div>
       <!-- DASH: WEEK SCHEDULE PREVIEW (read-only) -->
-      <div class="card" id="dash-schedule">
-        <div class="card-title">График на эту неделю (превью)</div>
-        <div class="row mini legend">
-          <span class="chip off xs">Вых</span>
-          <span class="chip s1 xs">09–17</span>
-          <span class="chip s2 xs">14–22</span>
-          <span class="chip s3 xs">10–18</span>
-          <span class="chip s4 xs">18–22</span>
+      <div id="dash-schedule" style="font-family:'Public Sans',sans-serif;">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-base font-bold tracking-tight text-slate-900 dark:text-slate-100">График на эту неделю</h2>
+          <span class="material-symbols-outlined text-slate-400 text-[18px]">calendar_month</span>
         </div>
-        <div class="schedule-wrap compact">
-          <table class="schedule-table compact" id="dash-schedule-table">
-            <thead>
-              <tr>
-                <th>Менеджер</th>
-                <th>Пн</th><th>Вт</th><th>Ср</th><th>Чт</th><th>Пт</th><th>Сб</th><th>Вс</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+        <div class="flex flex-wrap gap-1.5 mb-4">
+          <div class="flex items-center gap-1 px-2 py-1 bg-red-50 dark:bg-red-900/20 rounded-full border border-red-100 dark:border-red-800">
+            <span class="size-1.5 rounded-full bg-red-500"></span>
+            <span class="text-[10px] font-medium text-red-600">Вых</span>
+          </div>
+          <div class="flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 rounded-full border border-blue-100 dark:border-blue-800">
+            <span class="size-1.5 rounded-full bg-blue-500"></span>
+            <span class="text-[10px] font-medium text-blue-600">11–20</span>
+          </div>
+          <div class="flex items-center gap-1 px-2 py-1 bg-green-50 dark:bg-green-900/20 rounded-full border border-green-100 dark:border-green-800">
+            <span class="size-1.5 rounded-full bg-green-500"></span>
+            <span class="text-[10px] font-medium text-green-600">10–19</span>
+          </div>
+          <div class="flex items-center gap-1 px-2 py-1 bg-amber-50 dark:bg-amber-900/20 rounded-full border border-amber-100 dark:border-amber-800">
+            <span class="size-1.5 rounded-full bg-amber-500"></span>
+            <span class="text-[10px] font-medium text-amber-600">17–22</span>
+          </div>
+          <div class="flex items-center gap-1 px-2 py-1 bg-purple-50 dark:bg-purple-900/20 rounded-full border border-purple-100 dark:border-purple-800">
+            <span class="size-1.5 rounded-full bg-purple-500"></span>
+            <span class="text-[10px] font-medium text-purple-600">14–22</span>
+          </div>
+        </div>
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <div class="overflow-x-auto" style="-ms-overflow-style:none;scrollbar-width:none;">
+            <table class="w-full min-w-[600px] border-collapse" id="dash-schedule-table">
+              <thead>
+                <tr class="bg-slate-50/50 dark:bg-slate-900/30">
+                  <th class="p-3 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider sticky left-0 bg-white dark:bg-slate-800 border-r border-slate-100 dark:border-slate-700">Менеджер</th>
+                  <th class="p-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-wider">Пн</th>
+                  <th class="p-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-wider">Вт</th>
+                  <th class="p-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-wider">Ср</th>
+                  <th class="p-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-wider">Чт</th>
+                  <th class="p-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-wider">Пт</th>
+                  <th class="p-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-wider" style="color:#ec5b13;">Сб</th>
+                  <th class="p-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-wider" style="color:#ec5b13;">Вс</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 dark:divide-slate-700"></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </section>
@@ -229,33 +275,71 @@
 
     <!-- SCHEDULE -->
     <section class="screen" id="screen-schedule">
-      <div class="card">
-        <div class="card-title">График работы (неделя)</div>
+      <div class="schedule-tw" style="font-family:'Public Sans',sans-serif;">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-6">
+          <h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">График работы</h1>
+          <button class="flex items-center justify-center size-10 rounded-xl bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700">
+            <span class="material-symbols-outlined text-slate-600 dark:text-slate-400 text-[20px]">calendar_month</span>
+          </button>
+        </div>
 
-        <div class="row schedule-controls">
-          <button class="btn" id="sched-prev">&#171; Неделя назад</button>
-          <button class="btn" id="sched-next">Следующая неделя &#187;</button>
-          <input type="date" id="sched-week" />
+        <!-- Week navigation -->
+        <div class="flex items-center justify-between bg-white dark:bg-slate-800 p-2 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 mb-6">
+          <button id="sched-prev" class="p-2 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-colors">
+            <span class="material-symbols-outlined text-slate-400">arrow_back_ios_new</span>
+          </button>
+          <div class="flex items-center gap-2">
+            <input type="date" id="sched-week" class="text-sm font-semibold text-slate-700 dark:text-slate-300 bg-transparent border-none text-center focus:ring-0 p-0" />
+          </div>
+          <button id="sched-next" class="p-2 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-colors">
+            <span class="material-symbols-outlined text-slate-400">arrow_forward_ios</span>
+          </button>
+        </div>
 
-          <div class="legend">
-            <span class="chip off">Выходной</span>
-            <span class="chip s1">09:00–17:00</span>
-            <span class="chip s2">14:00–22:00</span>
-            <span class="chip s3">10:00–18:00</span>
-            <span class="chip s4">18:00–22:00</span>
+        <!-- Legend -->
+        <div class="flex flex-wrap gap-2 mb-6">
+          <div class="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 dark:bg-red-900/20 rounded-full border border-red-100 dark:border-red-800">
+            <span class="size-2 rounded-full bg-red-500"></span>
+            <span class="text-[11px] font-medium text-red-700 dark:text-red-300">Выходной</span>
+          </div>
+          <div class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 rounded-full border border-blue-100 dark:border-blue-800">
+            <span class="size-2 rounded-full bg-blue-500"></span>
+            <span class="text-[11px] font-medium text-blue-700 dark:text-blue-300">11:00–20:00</span>
+          </div>
+          <div class="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 dark:bg-green-900/20 rounded-full border border-green-100 dark:border-green-800">
+            <span class="size-2 rounded-full bg-green-500"></span>
+            <span class="text-[11px] font-medium text-green-700 dark:text-green-300">10:00–19:00</span>
+          </div>
+          <div class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 dark:bg-amber-900/20 rounded-full border border-amber-100 dark:border-amber-800">
+            <span class="size-2 rounded-full bg-amber-500"></span>
+            <span class="text-[11px] font-medium text-amber-700 dark:text-amber-300">17:00–22:00</span>
+          </div>
+          <div class="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 dark:bg-purple-900/20 rounded-full border border-purple-100 dark:border-purple-800">
+            <span class="size-2 rounded-full bg-purple-500"></span>
+            <span class="text-[11px] font-medium text-purple-700 dark:text-purple-300">14:00–22:00</span>
           </div>
         </div>
 
-        <div class="schedule-wrap">
-          <table class="schedule-table" id="schedule-table">
-            <thead>
-              <tr>
-                <th>Менеджер</th>
-                <th>Пн</th><th>Вт</th><th>Ср</th><th>Чт</th><th>Пт</th><th>Сб</th><th>Вс</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+        <!-- Table -->
+        <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <div class="overflow-x-auto" style="-ms-overflow-style:none;scrollbar-width:none;">
+            <table class="w-full min-w-[600px] border-collapse" id="schedule-table">
+              <thead>
+                <tr class="bg-slate-50/50 dark:bg-slate-900/30">
+                  <th class="p-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider sticky left-0 bg-white dark:bg-slate-800 border-r border-slate-100 dark:border-slate-700">Сотрудник</th>
+                  <th class="p-4 text-center text-xs font-bold text-slate-400 uppercase tracking-wider">Пн</th>
+                  <th class="p-4 text-center text-xs font-bold text-slate-400 uppercase tracking-wider">Вт</th>
+                  <th class="p-4 text-center text-xs font-bold text-slate-400 uppercase tracking-wider">Ср</th>
+                  <th class="p-4 text-center text-xs font-bold text-slate-400 uppercase tracking-wider">Чт</th>
+                  <th class="p-4 text-center text-xs font-bold text-slate-400 uppercase tracking-wider">Пт</th>
+                  <th class="p-4 text-center text-xs font-bold text-slate-400 uppercase tracking-wider" style="color:#ec5b13;">Сб</th>
+                  <th class="p-4 text-center text-xs font-bold text-slate-400 uppercase tracking-wider" style="color:#ec5b13;">Вс</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 dark:divide-slate-700"></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </section>

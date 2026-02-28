@@ -439,6 +439,7 @@ select:focus {
 /* === Schedule (Weekly) === */
 .schedule-controls { align-items: center; gap: 12px; flex-wrap: wrap; }
 .schedule-controls .legend { display: inline-flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+.week-nav { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
 .schedule-wrap { overflow: auto; border-radius: var(--radius); border: 1px solid rgba(0,0,0,0.06); }
 .schedule-table { width: 100%; border-collapse: separate; border-spacing: 0; }
