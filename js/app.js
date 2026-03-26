@@ -880,17 +880,21 @@
   function meMonthRange() {
     const y = meStatsMonth.getFullYear();
     const m = meStatsMonth.getMonth();
-    const from = toYMD(new Date(y, m, 1));
-    const to = toYMD(new Date(y, m + 1, 0));
+    const from = toYMD(new Date(y, m, 10));
+    const to = toYMD(new Date(y, m + 1, 10));
     return { from, to };
   }
 
   function updateMeMonthLabel() {
     const el = $("#me-month-label");
     if (!el) return;
-    const months = ["январь","февраль","март","апрель","май","июнь",
-      "июль","август","сентябрь","октябрь","ноябрь","декабрь"];
-    el.textContent = `${months[meStatsMonth.getMonth()]} ${meStatsMonth.getFullYear()}`;
+    const y = meStatsMonth.getFullYear();
+    const m = meStatsMonth.getMonth();
+    const fromDate = new Date(y, m, 10);
+    const toDate = new Date(y, m + 1, 10);
+    const pad = n => String(n).padStart(2, '0');
+    const fmtD = d => `${pad(d.getDate())}.${pad(d.getMonth() + 1)}`;
+    el.textContent = `${fmtD(fromDate)} – ${fmtD(toDate)}`;
   }
 
   async function loadMeStats() {
