@@ -874,13 +874,18 @@
   }
 
   // --- Month navigation for salary ---
+  // Period: 11th of month → 10th of next month.
+  // If today is 1–10, the active period started last month.
   let meStatsMonth = new Date();
+  if (meStatsMonth.getDate() <= 10) {
+    meStatsMonth.setMonth(meStatsMonth.getMonth() - 1);
+  }
   meStatsMonth.setDate(1);
 
   function meMonthRange() {
     const y = meStatsMonth.getFullYear();
     const m = meStatsMonth.getMonth();
-    const from = toYMD(new Date(y, m, 10));
+    const from = toYMD(new Date(y, m, 11));
     const to = toYMD(new Date(y, m + 1, 10));
     return { from, to };
   }
@@ -890,7 +895,7 @@
     if (!el) return;
     const y = meStatsMonth.getFullYear();
     const m = meStatsMonth.getMonth();
-    const fromDate = new Date(y, m, 10);
+    const fromDate = new Date(y, m, 11);
     const toDate = new Date(y, m + 1, 10);
     const pad = n => String(n).padStart(2, '0');
     const fmtD = d => `${pad(d.getDate())}.${pad(d.getMonth() + 1)}`;
@@ -921,7 +926,7 @@
       convertAmount(totals.amounts?.KGS || 0, "KGS", currentCurrency) +
       convertAmount(totals.amounts?.KZT || 0, "KZT", currentCurrency);
 
-    const salary = totalInCur * 0.03;
+    const salary = totalInCur * 0.04;
 
     const elPeople = $("#me-kpi-people");
     const elSales = $("#me-kpi-sales");
@@ -981,7 +986,7 @@
 
     rows.forEach(r => {
       const amount = Number(r.amount || 0);            // уже сконвертировано в currentCurrency
-      const salary = amount * 0.03;                    // ЗП 3%
+      const salary = amount * 0.04;                    // ЗП 4%
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${escapeHtml(r.managerName || '—')}</td>

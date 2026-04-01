@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/css/all.min.css">
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
   <script>
     tailwind.config = {
@@ -32,9 +32,10 @@
             "background-light": "#f8f6f6",
             "background-dark": "#221610",
           },
-          fontFamily: {
-            "display": ["Public Sans", "sans-serif"]
-          },
+        fontFamily: {
+          "display": ["Inter", "sans-serif"],
+          "sans": ["Inter", "sans-serif"]
+        },
         },
       },
     }
@@ -413,63 +414,73 @@
 
     <!-- ME (Личный кабинет) -->
     <section class="screen" id="screen-me">
-      <div class="card" id="me-unauth">
-        <div class="card-title">Войти</div>
-        <form id="login-form" class="form">
-          <select id="login-manager" required></select>
-          <div class="second_row_log">
-            <input type="password" id="login-pass" placeholder="Пароль">
-            <button class="btn" type="submit">Войти</button>
-          </div>
-        </form>
-        <p class="mini">🌟 ПОДСКАЗКА: если пароль ещё не установлен для менеджера, вход с пустым паролем доступен и его можно задать ниже.</p>
+      <div class="max-w-md mx-auto" id="me-unauth">
+        <div class="card text-center p-8">
+          <div class="text-sm uppercase tracking-widest text-[#64748B] font-bold mb-2">Авторизация</div>
+          <div class="text-2xl font-black text-[#0F172A] tracking-tight mb-6">Вход в аккаунт</div>
+          <form id="login-form" class="form flex flex-col gap-4">
+            <select id="login-manager" required class="w-full"></select>
+            <input type="password" id="login-pass" placeholder="Пароль" class="w-full">
+            <button class="btn primary w-full mt-2" type="submit">Войти</button>
+          </form>
+          <p class="text-xs text-[#64748B] mt-6 opacity-75">Если пароль ещё не установлен, просто нажмите войти.</p>
+        </div>
       </div>
 
-      <div class="card hidden" id="me-auth">
-        <div class="card-title">Личный кабинет</div>
-        <div class="row">
-          <div id="me-name" class="big"></div>
-        </div>
-
-        <!-- Валюта + курс -->
-        <div class="row" id="me-currency-row">
-          <div class="btn-group" role="group" aria-label="Выбор валюты">
-            <button class="btn" id="cur-kgs" data-cur="KGS">сом (KGS)</button>
-            <button class="btn" id="cur-kzt" data-cur="KZT">тенге (KZT)</button>
-            <span id="rate-badge" class="mini" style="margin-left:8px;"></span>
+      <div class="hidden" id="me-auth">
+        <!-- Header Section -->
+        <div class="flex flex-wrap justify-between items-start mb-8 gap-4 px-2">
+          <div>
+            <div class="text-[13px] text-[#64748B] font-bold uppercase tracking-widest mb-1">Личный кабинет</div>
+            <div id="me-name" class="text-4xl md:text-5xl font-black text-[#0F172A] tracking-tighter"></div>
+          </div>
+          <div class="flex flex-col items-end gap-1" id="me-currency-row">
+            <div class="currency-toggle" role="group" aria-label="Выбор валюты">
+              <button class="cur-btn" id="cur-kgs" data-cur="KGS">
+                <span class="cur-btn-label">Сом</span>
+                <span class="cur-btn-code">KGS</span>
+              </button>
+              <button class="cur-btn" id="cur-kzt" data-cur="KZT">
+                <span class="cur-btn-label">Тенге</span>
+                <span class="cur-btn-code">KZT</span>
+              </button>
+            </div>
+            <span id="rate-badge"></span>
           </div>
         </div>
 
-        <!-- KPI -->
-        <div class="card" id="me-kpis">
-          <div class="month-nav">
+        <!-- KPI Section -->
+        <div id="me-kpis" class="mb-10">
+          <div class="flex items-center gap-4 mb-6 px-2">
             <button class="month-nav-btn" id="me-month-prev"><i class="fa-solid fa-chevron-left"></i></button>
-            <span class="month-nav-label" id="me-month-label"></span>
+            <span class="text-2xl font-extrabold capitalize text-[#0F172A] tracking-tight" id="me-month-label"></span>
             <button class="month-nav-btn" id="me-month-next"><i class="fa-solid fa-chevron-right"></i></button>
           </div>
+          
           <div class="kpi-grid">
-            <div class="card kpi">
-              <div class="kpi-label">Записал людей</div>
+            <div class="card kpi m-0">
+              <div class="kpi-label">Люди</div>
               <div class="kpi-value" id="me-kpi-people">—</div>
             </div>
-            <div class="card kpi">
-              <div class="kpi-label">Продаж</div>
+            <div class="card kpi m-0">
+              <div class="kpi-label">Продажи</div>
               <div class="kpi-value" id="me-kpi-sales">—</div>
             </div>
-            <div class="card kpi">
-              <div class="kpi-label">Сумма (итого)</div>
+            <div class="card kpi m-0">
+              <div class="kpi-label">Сумма</div>
               <div class="kpi-value" id="me-kpi-total">—</div>
             </div>
-            <div class="card kpi">
-              <div class="kpi-label">ЗП 3%</div>
+            <div class="card kpi m-0">
+              <div class="kpi-label">ЗП 4%</div>
               <div class="kpi-value" id="me-kpi-salary">—</div>
             </div>
           </div>
         </div>
 
-        <div class="row">
-          <button class="btn" id="btn-change-pass">Сменить пароль</button>
-          <button class="btn danger" id="btn-logout">Выйти</button>
+        <!-- Actions -->
+        <div class="flex flex-wrap gap-4 px-2 mt-12">
+          <button class="btn bg-white/50 backdrop-blur-md m-0" id="btn-change-pass">Сменить пароль</button>
+          <button class="btn m-0 !bg-transparent !border-transparent !text-red-500 !shadow-none hover:bg-red-50" id="btn-logout">Выйти из аккаунта</button>
         </div>
       </div>
       <!-- Админ-панель: видна только при privileges=1 -->
@@ -491,7 +502,7 @@
                 <th>Люди</th>
                 <th>Продажи</th>
                 <th>Сумма</th>
-                <th>ЗП (3%)</th>
+                <th>ЗП (4%)</th>
               </tr>
             </thead>
             <tbody></tbody>
